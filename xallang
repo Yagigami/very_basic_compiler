@@ -1,0 +1,18 @@
+program ::= definition*
+
+definition ::= '(' 'def' identifier '(' identifier* ')' block intexpression ')'
+
+block ::= statement*
+
+statement ::= '(' 'set' identifier intexpression ')'
+	    | '(' 'if' boolexpression '(' block ')' '(' block ')' ')'
+	    | '(' 'while' boolexpression block ')'
+
+intexpression ::= '(' '+' intexpression intexpression ')'
+	        | identifier
+	        | integer
+
+boolexpression ::= '(' '=' intexpression intexpression ')'
+	         | '(' '<' intexpression intexpression ')'
+		 | '(' 'not' boolexpression ')'
+

@@ -1,0 +1,36 @@
+[
+    {
+        "arguments": [
+            "cc",
+            "-c",
+            "-std=c11",
+            "-ggdb3",
+            "-fPIC",
+            "-Iinclude",
+            "-Wall",
+            "-Wextra",
+            "-Wformat=2",
+            "-Wformat-overflow=2",
+            "-Winit-self",
+            "-Wignored-qualifiers",
+            "-Wstrict-aliasing=3",
+            "-Walloca",
+            "-Warray-bounds",
+            "-Wshadow",
+            "-Wpointer-arith",
+            "-Wuninitialized",
+            "-Wstrict-prototypes",
+            "-Wredundant-decls",
+            "-Wunreachable-code",
+            "-Wmissing-field-initializers",
+            "-Wunused",
+            "-Werror",
+            "-Og",
+            "-o",
+            "build/debug/utils.c.o",
+            "src/utils.c"
+        ],
+        "directory": "/home/yagi/dev/c/comp",
+        "file": "src/utils.c"
+    }
+]
