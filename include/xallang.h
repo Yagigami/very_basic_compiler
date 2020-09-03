@@ -2,10 +2,12 @@
 #define XALLANG_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 
 struct identifier {
-	char *name;
+	const char *name;
+	ptrdiff_t len;
 };
 
 enum xallang_type {
@@ -54,6 +56,21 @@ struct xallang_definition {
 struct xallang_program {
 	struct xallang_definition *defs;
 };
+
+
+extern const char *stream;
+
+int xl_parse_program(struct xallang_program *pgrm);
+int xl_parse_definition(struct xallang_definition *def);
+int xl_parse_block(struct xallang_block *blk);
+int xl_parse_statement(struct xallang_statement *stmt);
+int xl_parse_intexpr(struct xallang_intexpression *expr);
+int xl_parse_boolexpr(struct xallang_boolexpression *expr);
+
+struct identifier parse_cidentifier(void);
+uint64_t parse_u64(void);
+void skip_whitespace(void);
+
 
 #endif /* XALLANG_H */
 
