@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	if ((ret = load_file(&blob, inf))) goto load;
 	stream = blob.data;
 	xl_parse_program(&pgrm);
-	xl_dump_program(stdout, &pgrm);
+	xl_dump_program(stdout, 0, &pgrm);
 	if ((ret = unload_file(&blob))) goto ul;
 	ret = 0;
 
