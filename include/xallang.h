@@ -60,12 +60,12 @@ struct xallang_program {
 
 extern const char *stream;
 
-int xl_parse_program(struct xallang_program *pgrm);
-int xl_parse_definition(struct xallang_definition *def);
-int xl_parse_block(struct xallang_block *blk);
-int xl_parse_statement(struct xallang_statement *stmt);
-int xl_parse_intexpr(struct xallang_intexpression *expr);
-int xl_parse_boolexpr(struct xallang_boolexpression *expr);
+void xl_parse_program(struct xallang_program *pgrm);
+void xl_parse_definition(struct xallang_definition *def);
+void xl_parse_block(struct xallang_block *blk);
+void xl_parse_statement(struct xallang_statement *stmt);
+struct xallang_intexpression *xl_parse_intexpr(void);
+struct xallang_boolexpression *xl_parse_boolexpr(void);
 
 struct identifier parse_cidentifier(void);
 uint64_t parse_u64(void);

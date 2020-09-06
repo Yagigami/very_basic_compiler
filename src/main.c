@@ -2,6 +2,10 @@
 #include <stdlib.h>
 
 #include "utils.h"
+#include "xallang.h"
+
+
+const char *stream;
 
 
 int main(int argc, char **argv)
