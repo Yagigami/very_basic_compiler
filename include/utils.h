@@ -46,5 +46,9 @@ static inline void *_buf_resize(void *old, size_t sz)
 	return buf->mem;
 }
 
+// stringop
+#define CMP(s1, s2) strncmp((s1), (s2), sizeof (s1)-1)
+#define MATCH_KW(kw) (CMP((kw), stream) == 0 && (stream += sizeof (kw), 1))
+
 #endif /* UTILS_H */
 

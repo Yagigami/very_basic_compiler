@@ -11,10 +11,6 @@
 #include "xallang.h"
 
 
-#define CMP(s1, s2) strncmp((s1), (s2), sizeof (s1)-1)
-
-#define MATCH_KW(kw) (CMP((kw), stream) == 0 && (stream += sizeof (kw), 1))
-
 #define INDENT_SH 4
 
 void fprintln(FILE *f, int indent, const char *s) {
