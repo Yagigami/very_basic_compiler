@@ -1,0 +1,15 @@
+program ::= statement*
+
+statement ::= [identifier ':'] statement
+            | instruction [operand [, operand]*]
+
+operand ::= '$' integer
+          | '%' local-id
+
+# means k-th local, not k as an immediate value
+local-id ::= integer
+
+instruction ::= 'set'
+              | 'ret'
+	      | 'local'
+
