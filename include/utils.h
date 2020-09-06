@@ -9,6 +9,7 @@
 // memory
 void *xmalloc(ssize_t sz);
 void *xrealloc(void *ptr, ssize_t sz);
+void *xcalloc(ssize_t sz, ssize_t cnt);
 void xfree(void *ptr);
 
 // file
@@ -34,14 +35,14 @@ struct _stretchy_buf {
 #define buf_len(x) ((x) ? _buf_len((x)): 0)
 #define buf_cap(x) ((x) ? _buf_cap((x)): 0)
 #define buf_fits(x, n) (buf_len((x)) >= (n))
-#define buf_fit(x, n) (buf_fits((x), (n)) ? (x): ((x) = _buf_resize((x), (n) * 2 * sizeof *(x))))
+#define buf_fit(x, n) (buf_fits((x), (n)) ? (x): ((x) = _buf_resize((x), sizeof (struct _stretchy_buf) + (n) * 2 * sizeof *(x))))
 #define buf_push(x, ...) (buf_fit((x), buf_len(x)+1), (x)[_buf_len((x))++] = (__VA_ARGS__))
 #define buf_fini(x) xfree(_buf_hdr((x)))
 
-static inline void *_buf_resize(void *_old, size_t sz)
+static inline void *_buf_resize(void *old, size_t sz)
 {
-	struct _stretchy_buf *old = _old ?_buf_hdr(_old): NULL;
-	struct _stretchy_buf *buf = xrealloc(old, sz);
+	if (old) return ((struct _stretchy_buf *) xrealloc(_buf_hdr(old), sz))->mem;
+	struct _stretchy_buf *buf = xcalloc(1, sz);
 	return buf->mem;
 }
 

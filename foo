@@ -1,5 +1,12 @@
-this is
-just
+#!/home/yagi/dev/c/comp/main
+# this is a comment
+(def foo ()
+	# so is this
+	1
+)
 
-an example
+(def bar (a, b) # this function adds a and b
+	(set c (+ a b))
+	c
+)
 

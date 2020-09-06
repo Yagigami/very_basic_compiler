@@ -1,6 +1,7 @@
 #ifndef XALLANG_H
 #define XALLANG_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
 
@@ -66,6 +67,13 @@ void xl_parse_block(struct xallang_block *blk);
 void xl_parse_statement(struct xallang_statement *stmt);
 struct xallang_intexpression *xl_parse_intexpr(void);
 struct xallang_boolexpression *xl_parse_boolexpr(void);
+
+void xl_dump_program(FILE *f, struct xallang_program *pgrm);
+void xl_dump_definition(FILE *f, struct xallang_definition *def);
+void xl_dump_block(FILE *f, struct xallang_block *blk);
+void xl_dump_statement(FILE *f, struct xallang_statement *stmt);
+void xl_dump_intexpr(FILE *f, struct xallang_intexpression *iexpr);
+void xl_dump_boolexpr(FILE *f, struct xallang_boolexpression *bexpr);
 
 struct identifier parse_cidentifier(void);
 uint64_t parse_u64(void);

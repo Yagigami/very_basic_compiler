@@ -27,6 +27,14 @@ void *xrealloc(void *ptr, ssize_t sz)
 	exit(1);
 }
 
+void *xcalloc(ssize_t sz, ssize_t cnt)
+{
+	void *p = calloc(sz, cnt);
+	if (p) return p;
+	printf("xcalloc(%zd, %zd): allocation failure.\n", sz, cnt);
+	exit(1);
+}
+
 void xfree(void *ptr)
 {
 	free(ptr);
