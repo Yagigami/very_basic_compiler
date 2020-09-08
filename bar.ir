@@ -1,0 +1,5 @@
+:_start
+	local $r
+	set $r, $3B
+:retstmt
+	ret

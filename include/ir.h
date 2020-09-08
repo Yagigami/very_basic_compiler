@@ -38,4 +38,8 @@ void ir_parse_operand(struct ir_operand *op);
 enum ir_type ir_parse_instr(void);
 uint64_t ir_parse_integer(void);
 
+void ir_dump_program(FILE *f, int indent, struct ir_program *pgrm);
+void ir_dump_statement(FILE *f, int indent, struct ir_statement *stmt);
+void ir_dump_operand(FILE *f, int indent, struct ir_operand *op);
+
 #endif /* IR_H */

@@ -4,6 +4,7 @@
 
 #include "utils.h"
 #include "xallang.h"
+#include "ir.h"
 
 
 const char *stream;
@@ -34,8 +35,11 @@ int main(int argc, char **argv)
 
 	if ((ret = load_file(&blob, inf))) goto load;
 	stream = blob.data;
-	xl_parse_program(&pgrm);
-	xl_dump_program(stdout, 0, &pgrm);
+	// xl_parse_program(&pgrm);
+	// xl_dump_program(stdout, 0, &pgrm);
+	struct ir_program ir_pgrm = {0};
+	ir_parse_program(&ir_pgrm);
+	ir_dump_program(stdout, 0, &ir_pgrm);
 	if ((ret = unload_file(&blob))) goto ul;
 	ret = 0;
 

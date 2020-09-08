@@ -79,6 +79,18 @@ struct identifier parse_cidentifier(void);
 uint64_t parse_u64(void);
 void skip_whitespace(void);
 
+static inline void fprintln(FILE *f, int indent, const char *s) {
+	static const char *fill =
+		"                                                                      "
+		"                                                                      "
+		"                                                                      "
+		"                                                                      "
+	;
+	fprintf(f, "%s\n%.*s", s, indent, fill);
+}
+
+#define INDENT_SH 4
+
 
 #endif /* XALLANG_H */
 

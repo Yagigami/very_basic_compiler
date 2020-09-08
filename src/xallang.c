@@ -11,18 +11,6 @@
 #include "xallang.h"
 
 
-#define INDENT_SH 4
-
-void fprintln(FILE *f, int indent, const char *s) {
-	static const char *fill =
-		"                                                                      "
-		"                                                                      "
-		"                                                                      "
-		"                                                                      "
-	;
-	fprintf(f, "%s\n%.*s", s, indent, fill);
-}
-
 noreturn void error(const char *msg, ...)
 {
 	fprintf(stderr, "error (%.32s): ", stream);
