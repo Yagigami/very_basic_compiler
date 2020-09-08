@@ -2,4 +2,5 @@
 	local $r
 	set $r, $3B
 :retstmt
+:nestedlbl
 	ret

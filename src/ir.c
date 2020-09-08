@@ -20,7 +20,7 @@ void ir_parse_program(struct ir_program *pgrm)
 
 void ir_parse_statement(struct ir_statement *stmt)
 {
-	if (*stream == ':') {
+	while (*stream == ':') {
 		stream++;
 		stmt->kind = IR_LABELED;
 		stmt->lbl = parse_cidentifier();
