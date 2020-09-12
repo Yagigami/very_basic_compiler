@@ -1,5 +1,6 @@
 #!/home/yagi/dev/c/comp/main
 # this is a comment
+
 (def foo ()
 	# so is this
 	1

@@ -13,7 +13,7 @@ enum ir_type {
 	IR_LABELED, IR_INSTR,
 	IR_HEX, IR_VAR,
 	IRINSTR_SET, IRINSTR_RET, IRINSTR_LOCAL,
-	IRINSTR_ADD,
+	IRINSTR_ADD, IRINSTR_JMP,
 };
 
 struct ir_program {
@@ -48,6 +48,13 @@ void ir_parse_statement(struct ir_definition *def, struct ir_statement *stmt);
 void ir_parse_operand(struct ir_operand *op);
 enum ir_type ir_parse_instr(ssize_t *n);
 uint64_t ir_parse_integer(void);
+
+void ir_gen_program(FILE *f, struct xallang_program *pgrm);
+void ir_gen_definition(FILE *f, struct xallang_definition *def);
+void ir_gen_statement(FILE *f, struct xallang_statement *stmt);
+void ir_gen_intexpr(FILE *f, struct xallang_intexpression *iexpr);
+void ir_gen_boolexpr(FILE *f, struct xallang_boolexpression *bexpr);
+void ir_gen_ident(FILE *f, struct identifier id);
 
 void ir_dump_program(FILE *f, int indent, struct ir_program *pgrm);
 void ir_dump_definition(FILE *f, int indent, struct ir_definition *def);

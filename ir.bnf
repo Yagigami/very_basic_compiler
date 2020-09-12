@@ -3,7 +3,7 @@ program ::= definition*
 definition ::= identifier '(' ')' statement* '$'
 
 statement ::= ':' identifier
-            | instruction [operand [, operand]*] '$'
+            | instruction [operand [, operand]*] EOL
 
 operand ::= integer
           | identifier
@@ -14,4 +14,5 @@ instruction ::= 'set'
               | 'ret'
 	      | 'local'
 	      | 'add'
+	      | 'jmp'
 

@@ -1,12 +1,13 @@
 #!/home/yagi/dev/c/comp/main
 foo ()
-	local r 
-	set r, 3B 
-	local vk 
+	local r
+	set r, 3B
+	local vk
 	set vk, r 
 :retstmt
 	local bar  
 	add bar, r, vk 
+	# jmp retstmt
 :nestedlbl
 	ret bar 
 $

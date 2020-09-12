@@ -33,6 +33,14 @@ void ir_parse_definition(struct ir_definition *def)
 	stream++;
 }
 
+struct identifier *idlist_find(struct identifier *ids, struct identifier id) {
+	for (ssize_t i = 0; i < buf_len(ids); i++) {
+		if (ids[i].len == id.len && strncmp(ids[i].name, id.name, id.len) == 0)
+			return ids + i;
+	}
+	return NULL;
+}
+
 void ir_parse_statement(struct ir_definition *def, struct ir_statement *stmt)
 {
 	if (skip_whitespace(), *stream != ':') {
@@ -98,8 +106,48 @@ uint64_t ir_parse_integer(void)
 	return i;
 }
 
+void ir_gen_program(FILE *f, struct xallang_program *pgrm)
+{
+	fprintf(f, "#!/home/yagi/dev/c/comp/main\n\n\n");
+
+	for (ssize_t i = 0; i < buf_len(pgrm->defs); i++) {
+		ir_gen_definition(f, pgrm->defs + i);
+		fprintf(f, "\n\n");
+	}
+}
+
+void ir_gen_definition(FILE *f, struct xallang_definition *def)
+{
+	fprintf(f, "%.*s(", (int) def->name.len, def->name.name);
+	fprintf(f, ")\n");
+	for (ssize_t i = 0; i < buf_len(def->blk.stmts); i++) {
+		ir_gen_statement(f, def->blk.stmts + i);
+	}
+	ir_gen_intexpr(f, def->retval);
+
+	fprintf(f, "\n$");
+}
+
+void ir_gen_statement(FILE *f, struct xallang_statement *stmt)
+{
+}
+
+void ir_gen_intexpr(FILE *f, struct xallang_intexpression *iexpr)
+{
+}
+
+void ir_gen_boolexpr(FILE *f, struct xallang_boolexpression *bexpr)
+{
+}
+
+void ir_gen_ident(FILE *f, struct identifier id)
+{
+}
+
+/*
 void ir_dump_program(FILE *f, int indent, struct ir_program *pgrm);
 void ir_dump_definition(FILE *f, int indent, struct ir_definition *def);
 void ir_dump_statement(FILE *f, int indent, struct ir_statement *stmt);
 void ir_dump_operand(FILE *f, int indent, struct ir_operand *op);
+*/
 

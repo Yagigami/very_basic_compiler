@@ -41,6 +41,7 @@ void xl_parse_program(struct xallang_program *pgrm)
 		} else {
 			error("expected \"def\" keyword");
 		}
+		skip_whitespace();
 		if (*stream++ != ')') error("expected a closing ')' at the end of definition.");
 	}
 }

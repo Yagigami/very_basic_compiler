@@ -4,11 +4,13 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
+#include <limits.h>
 
 
 struct identifier {
 	const char *name;
-	ptrdiff_t len;
+	ptrdiff_t len: sizeof (ptrdiff_t) * CHAR_BIT - 1;
+	unsigned notresolved: 1;
 };
 
 enum xallang_type {
