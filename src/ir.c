@@ -39,7 +39,7 @@ void ir_parse_statement(struct ir_definition *def, struct ir_statement *stmt)
 		ssize_t n;
 		stmt->instr = ir_parse_instr(&n);
 		stmt->kind = IR_INSTR;
-		for (ssize_t i = 0; skip_whitespace(), *stream != '$'; i++) {
+		for (ssize_t i = 0; skip_whitespace_nonl(), *stream != '\n'; i++) {
 			if (i) {
 				if (*stream++ != ',') error("expected comma separating instruction operands");
 			}
@@ -51,7 +51,7 @@ void ir_parse_statement(struct ir_definition *def, struct ir_statement *stmt)
 		if (buf_len(stmt->ops) != n) error("expected %zd operands but got %zd", n, buf_len(stmt->ops));
 
 		if (stmt->instr == IRINSTR_LOCAL)
-			buf_push(def->locals, stmt->ops[1].oid);
+			buf_push(def->locals, stmt->ops[0].oid);
 	} else {
 		stream++;
 		stmt->kind = IR_LABELED;
@@ -80,14 +80,21 @@ enum ir_type ir_parse_instr(ssize_t *n)
 	if (MATCH_KW("set")) return *n = 2, IRINSTR_SET;
 	if (MATCH_KW("ret")) return *n = 1, IRINSTR_RET;
 	if (MATCH_KW("local")) return *n = 1, IRINSTR_LOCAL;
+	if (MATCH_KW("add")) return *n = 3, IRINSTR_ADD;
 	return IR_UNK;
+}
+
+int hex2int(int c)
+{
+	if (isdigit(c)) return c - '0';
+	return tolower(c) - 'a' + 0xa;
 }
 
 uint64_t ir_parse_integer(void)
 {
 	uint64_t i = 0;
 	skip_whitespace();
-	while (isxdigit(*stream)) i = i * 16 + *stream++ - '0';
+	while (isxdigit(*stream)) i = i * 16 + hex2int(*stream++);
 	return i;
 }
 

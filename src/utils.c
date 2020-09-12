@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #include "utils.h"
 
@@ -91,4 +92,21 @@ void error(const char *msg, ...)
 	fputc('\n', stderr);
 	va_end(args);
 	exit(1);
+}
+
+void skip_whitespace(void)
+{
+	extern const char *stream;
+	while (*stream == '#' || isspace(*stream)) {
+		if (*stream == '#') do stream++; while (*stream != '\n');
+		stream++;
+	}
+}
+
+void skip_whitespace_nonl(void)
+{
+	extern const char *stream;
+	while (*stream == '#' || (isspace(*stream) && *stream != '\n')) {
+		if (*stream++ == '#') do stream++; while (*stream != '\n');
+	}
 }

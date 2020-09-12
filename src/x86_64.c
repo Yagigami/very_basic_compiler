@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <inttypes.h>
+#include <string.h>
 
 #include "x86_64.h"
 #include "utils.h"
@@ -55,22 +57,104 @@ static const char *reg2str[] = {
 	[AX64_R16] = "%r16",
 };
 
+static const struct identifier ax64_retreg = { .len = 4, .name = "%rax", };
+
 void ax64_gen_program(FILE *f, struct ir_program *pgrm)
 {
 	assert(buf_len(pgrm->defs));
 
 	for (ssize_t i = 0; i < buf_len(pgrm->defs); i++) {
-		struct identifier *id = pgrm->defs + i;
+		struct identifier *id = &pgrm->defs[i].name;
 		fprintf(f, ".globl %.*s\n", (int) id->len, id->name);
 	}
 	fputs("\n\n", f);
+
+	for (ssize_t i = 0; i < buf_len(pgrm->defs); i++) {
+		struct ir_definition *def = pgrm->defs + i;
+		fprintf(f, "%.*s:\n", (int) def->name.len, def->name.name);
+		for (ssize_t s = 0; s < buf_len(def->stmts); s++) {
+			ax64_gen_statement(f, def, def->stmts + s);
+		}
+		fprintf(f, "\n\n");
+	}
 }
 
-void ax64_gen_statement(FILE *f, struct ir_statement *stmt)
+void ax64_gen_statement_instr(FILE *f, struct ir_definition *def, struct ir_statement *stmt)
 {
+	switch (stmt->instr) {
+	case IRINSTR_SET:
+		fprintf(f, "\tmov ");
+		ax64_gen_operand(f, def, stmt->ops + 1); // src
+		fprintf(f, ", ");
+		ax64_gen_operand(f, def, stmt->ops + 0); // dst
+		break;
+	case IRINSTR_RET:
+		fprintf(f, "\tmov ");
+		ax64_gen_operand(f, def, stmt->ops + 0);
+		fprintf(f, ", ");
+		fprintf(f, "%.*s", (int) ax64_retreg.len, ax64_retreg.name);
+		fprintf(f, "\n");
+		fprintf(f, "\tret");
+		break;
+	case IRINSTR_LOCAL:
+		return;
+	case IRINSTR_ADD:
+		if (stmt->ops[0].oid.len == stmt->ops[1].oid.len && strncmp(stmt->ops[0].oid.name, stmt->ops[1].oid.name, stmt->ops[0].oid.len) == 0) {
+			fprintf(f, "\tadd ");
+			ax64_gen_operand(f, def, stmt->ops + 2);
+			fprintf(f, ", ");
+			ax64_gen_operand(f, def, stmt->ops + 0);
+		} else {
+			fprintf(f, "\tlea ");
+			fprintf(f, "(");
+			ax64_gen_operand(f, def, stmt->ops + 2);
+			fprintf(f, ", ");
+			ax64_gen_operand(f, def, stmt->ops + 1);
+			fprintf(f, "), ");
+			ax64_gen_operand(f, def, stmt->ops + 0);
+		}
+		break;
+	default:
+		assert(0);
+	}
+	fprintf(f, "\n");
 }
 
-void ax64_gen_operand(FILE *f, struct ir_operand *op)
+void ax64_gen_statement(FILE *f, struct ir_definition *def, struct ir_statement *stmt)
 {
+	switch (stmt->kind) {
+	case IR_LABELED:
+		fprintf(f, "%.*s:\n", (int) stmt->lbl.len, stmt->lbl.name);
+		break;
+	case IR_INSTR:
+		ax64_gen_statement_instr(f, def, stmt);
+		break;
+	default:
+		assert(0);
+	}
+}
+
+static const char *local2str(struct ir_definition *def, struct identifier *id)
+{
+	for (struct identifier *start = def->locals, *end = start + buf_len(def->locals), *cur = start;
+			cur != end; cur++) {
+		if (cur->len == id->len && strncmp(cur->name, id->name, cur->len) == 0)
+			return reg2str[cur - start];
+	}
+	assert(0);
+}
+
+void ax64_gen_operand(FILE *f, struct ir_definition *def, struct ir_operand *op)
+{
+	switch (op->kind) {
+	case IR_HEX:
+		fprintf(f, "$0x%" PRIx64, op->oint);
+		break;
+	case IR_VAR:
+		fprintf(f, "%s", local2str(def, &op->oid));
+		break;
+	default:
+		assert(0);
+	}
 }
 

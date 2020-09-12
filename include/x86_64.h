@@ -7,8 +7,8 @@
 
 
 void ax64_gen_program(FILE *f, struct ir_program *pgrm);
-void ax64_gen_statement(FILE *f, struct ir_statement *stmt);
-void ax64_gen_operand(FILE *f, struct ir_operand *op);
+void ax64_gen_statement(FILE *f, struct ir_definition *def, struct ir_statement *stmt);
+void ax64_gen_operand(FILE *f, struct ir_definition *def, struct ir_operand *op);
 
 #endif /* ARCH_X86_64_H */
 

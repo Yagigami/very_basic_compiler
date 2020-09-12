@@ -3,7 +3,7 @@ program ::= definition*
 definition ::= identifier '(' ')' statement* '$'
 
 statement ::= ':' identifier
-            | instruction [operand [, operand]*]
+            | instruction [operand [, operand]*] '$'
 
 operand ::= integer
           | identifier
@@ -13,4 +13,5 @@ integer ::= \x+
 instruction ::= 'set'
               | 'ret'
 	      | 'local'
+	      | 'add'
 

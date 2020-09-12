@@ -16,7 +16,6 @@ struct identifier parse_cidentifier(void)
 	struct identifier id = { .name = stream, };
 	while (isalpha(*stream) || *stream == '_') stream++;
 	id.len = stream - id.name;
-	skip_whitespace();
 	return id;
 }
 
@@ -28,16 +27,7 @@ uint64_t parse_u64(void)
 		n = n * 10 + *stream++ - '0';
 		if (*stream == '_' || *stream == '\'') stream++;
 	}
-	skip_whitespace();
 	return n;
-}
-
-void skip_whitespace(void)
-{
-	while (*stream == '#' || isspace(*stream)) {
-		if (*stream == '#') do stream++; while (*stream != '\n');
-		stream++;
-	}
 }
 
 void xl_parse_program(struct xallang_program *pgrm)

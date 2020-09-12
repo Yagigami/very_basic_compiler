@@ -13,6 +13,7 @@ enum ir_type {
 	IR_LABELED, IR_INSTR,
 	IR_HEX, IR_VAR,
 	IRINSTR_SET, IRINSTR_RET, IRINSTR_LOCAL,
+	IRINSTR_ADD,
 };
 
 struct ir_program {

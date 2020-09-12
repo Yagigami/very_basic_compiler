@@ -77,7 +77,6 @@ void xl_dump_boolexpr(FILE *f, int indent, struct xallang_boolexpression *bexpr)
 
 struct identifier parse_cidentifier(void);
 uint64_t parse_u64(void);
-void skip_whitespace(void);
 
 static inline void fprintln(FILE *f, int indent, const char *s) {
 	static const char *fill =
