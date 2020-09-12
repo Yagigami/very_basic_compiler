@@ -15,6 +15,11 @@ void ir_parse_program(struct ir_program *pgrm)
 		struct ir_statement stmt = {0};
 		ir_parse_statement(&stmt);
 		buf_push(pgrm->stmts, stmt);
+		while (stmt.kind == IR_LABELED) {
+			buf_push(pgrm->globals, stmt.lbl);
+			stmt = *stmt.inner;
+		}
+			
 	}
 }
 
@@ -29,8 +34,9 @@ void ir_parse_statement(struct ir_statement *stmt)
 		stmt = inner;
 	}
 
+	ssize_t n;
 	stmt->kind = IR_INSTR;
-	stmt->instr = ir_parse_instr();
+	stmt->instr = ir_parse_instr(&n);
 	
 	goto first;
 	while (skip_whitespace(), *stream == ',') {
@@ -43,14 +49,16 @@ first:
 		ir_parse_operand(&op);
 		buf_push(stmt->ops, op);
 	}
+
+	assert(n == buf_len(stmt->ops) && "operands not matching with requirements");
 }
 
-enum ir_type ir_parse_instr(void)
+enum ir_type ir_parse_instr(ssize_t *n)
 {
 	skip_whitespace();
-	if (MATCH_KW("set")) return IRINSTR_SET;
-	if (MATCH_KW("ret")) return IRINSTR_RET;
-	if (MATCH_KW("local")) return IRINSTR_LOCAL;
+	if (MATCH_KW("set")) return *n = 2, IRINSTR_SET;
+	if (MATCH_KW("ret")) return *n = 1, IRINSTR_RET;
+	if (MATCH_KW("local")) return *n = 1, IRINSTR_LOCAL;
 	assert(0);
 }
 

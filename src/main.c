@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "xallang.h"
 #include "ir.h"
+#include "x86_64.h"
 
 
 const char *stream;
@@ -40,6 +41,7 @@ int main(int argc, char **argv)
 	struct ir_program ir_pgrm = {0};
 	ir_parse_program(&ir_pgrm);
 	ir_dump_program(stdout, 0, &ir_pgrm);
+	ax64_gen_program(stdout, &ir_pgrm);
 	if ((ret = unload_file(&blob))) goto ul;
 	ret = 0;
 

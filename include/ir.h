@@ -2,6 +2,8 @@
 #define IR_H
 
 #include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "xallang.h"
 
@@ -14,6 +16,7 @@ enum ir_type {
 
 struct ir_program {
 	struct ir_statement *stmts;
+	struct identifier *globals;
 };
 
 struct ir_statement {
@@ -35,7 +38,7 @@ struct ir_operand {
 void ir_parse_program(struct ir_program *pgrm);
 void ir_parse_statement(struct ir_statement *stmt);
 void ir_parse_operand(struct ir_operand *op);
-enum ir_type ir_parse_instr(void);
+enum ir_type ir_parse_instr(ssize_t *n);
 uint64_t ir_parse_integer(void);
 
 void ir_dump_program(FILE *f, int indent, struct ir_program *pgrm);
