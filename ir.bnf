@@ -1,10 +1,12 @@
-program ::= statement*
+program ::= definition*
 
-statement ::= [':' identifier] statement
+definition ::= identifier '(' ')' statement* '$'
+
+statement ::= ':' identifier
             | instruction [operand [, operand]*]
 
-operand ::= '$' integer
-          | '$' identifier
+operand ::= integer
+          | identifier
 
 integer ::= \x+
 

@@ -57,21 +57,13 @@ static const char *reg2str[] = {
 
 void ax64_gen_program(FILE *f, struct ir_program *pgrm)
 {
-	assert(buf_len(pgrm->stmts));
+	assert(buf_len(pgrm->defs));
 
-	for (ssize_t i = 0; i < buf_len(pgrm->globals); i++) {
-		struct identifier *id = pgrm->globals + i;
+	for (ssize_t i = 0; i < buf_len(pgrm->defs); i++) {
+		struct identifier *id = pgrm->defs + i;
 		fprintf(f, ".globl %.*s\n", (int) id->len, id->name);
 	}
 	fputs("\n\n", f);
-
-	for (ssize_t i = 0; i < buf_len(pgrm->stmts); i++) {
-		struct ir_statement *stmt = pgrm->stmts + i;
-		while (stmt->kind == IR_LABELED) {
-			fprintf(f, "%.*s:\n", (int) stmt->lbl.len, stmt->lbl.name);
-			stmt = stmt->inner;
-		}
-	}
 }
 
 void ax64_gen_statement(FILE *f, struct ir_statement *stmt)

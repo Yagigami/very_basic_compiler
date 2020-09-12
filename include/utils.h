@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdnoreturn.h>
 
 
 // memory
@@ -48,7 +49,10 @@ static inline void *_buf_resize(void *old, size_t sz)
 
 // stringop
 #define CMP(s1, s2) strncmp((s1), (s2), sizeof (s1)-1)
-#define MATCH_KW(kw) (CMP((kw), stream) == 0 && (stream += sizeof (kw), 1))
+#define MATCH_KW(kw) (CMP((kw), stream) == 0 && (stream += sizeof (kw)-1, 1))
+
+// err
+noreturn void error(const char *msg, ...);
 
 #endif /* UTILS_H */
 

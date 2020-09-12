@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <stdarg.h>
 
 #include "utils.h"
 
@@ -78,4 +79,16 @@ open:
 int unload_file(struct memory_blob *blob)
 {
 	return munmap(blob->data, blob->size);
+}
+
+void error(const char *msg, ...)
+{
+	extern const char *stream;
+	fprintf(stderr, "error (%.32s): ", stream);
+	va_list args;
+	va_start(args, msg);
+	vfprintf(stderr, msg, args);
+	fputc('\n', stderr);
+	va_end(args);
+	exit(1);
 }

@@ -1,6 +1,5 @@
 #include <string.h>
 #include <ctype.h>
-#include <stdnoreturn.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -10,17 +9,6 @@
 #include "utils.h"
 #include "xallang.h"
 
-
-noreturn void error(const char *msg, ...)
-{
-	fprintf(stderr, "error (%.32s): ", stream);
-	va_list args;
-	va_start(args, msg);
-	vfprintf(stderr, msg, args);
-	fputc('\n', stderr);
-	va_end(args);
-	exit(1);
-}
 
 struct identifier parse_cidentifier(void)
 {

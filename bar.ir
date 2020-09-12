@@ -1,7 +1,8 @@
 #!/home/yagi/dev/c/comp/main
-:_start
-	local $r
-	set $r, $3B
+foo ()
+	local r $
+	set r, 3B $
 :retstmt
 :nestedlbl
-	ret $r
+	ret r $
+$
