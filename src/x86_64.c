@@ -116,7 +116,7 @@ void ax64_gen_statement_instr(FILE *f, struct ir_definition *def, struct ir_stat
 		break;
 	case IRINSTR_JMP:
 		fprintf(f, "\tjmp ");
-		ax64_gen_operand(f, def, stmt->ops + 0);
+		fprintf(f, "%.*s", (int) stmt->ops[0].oid.len, stmt->ops[0].oid.name);
 		break;
 	default:
 		assert(0);

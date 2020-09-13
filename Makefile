@@ -1,4 +1,5 @@
 CC := gcc
+AS := as
 LD := gcc
 
 MODE ?= debug
@@ -56,3 +57,10 @@ clean:
 run: $(BIN)
 	./$(BIN) $(ARGS)
 
+XAL = $(shell find -type f -name "*.xal")
+ASM = $(patsubst %.xal,$(BUILD)/%.s,$(XAL))
+
+$(BUILD)/%.s: %.xal $(BIN)
+	./$(BIN) $< >$@
+
+asm: $(ASM)

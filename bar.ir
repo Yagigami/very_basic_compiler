@@ -7,7 +7,7 @@ foo ()
 :retstmt
 	local bar  
 	add bar, r, vk 
-	# jmp retstmt
+	jmp retstmt
 :nestedlbl
 	ret bar 
 $

@@ -4,13 +4,11 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <limits.h>
 
 
 struct identifier {
 	const char *name;
-	ptrdiff_t len: sizeof (ptrdiff_t) * CHAR_BIT - 1;
-	unsigned notresolved: 1;
+	ptrdiff_t len;
 };
 
 enum xallang_type {
@@ -52,6 +50,7 @@ struct xallang_boolexpression {
 struct xallang_definition {
 	struct identifier name;
 	struct identifier *params;
+	struct identifier *locals;
 	struct xallang_block blk;
 	struct xallang_intexpression *retval;
 };
@@ -65,8 +64,8 @@ extern const char *stream;
 
 void xl_parse_program(struct xallang_program *pgrm);
 void xl_parse_definition(struct xallang_definition *def);
-void xl_parse_block(struct xallang_block *blk);
-void xl_parse_statement(struct xallang_statement *stmt);
+void xl_parse_block(struct xallang_definition *def, struct xallang_block *blk);
+void xl_parse_statement(struct xallang_definition *def, struct xallang_statement *stmt);
 struct xallang_intexpression *xl_parse_intexpr(void);
 struct xallang_boolexpression *xl_parse_boolexpr(void);
 

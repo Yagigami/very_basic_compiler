@@ -62,41 +62,44 @@ void xl_parse_definition(struct xallang_definition *def)
 	while (skip_whitespace(), *stream != ')') {
 	}
 	stream++;
-	xl_parse_block(&def->blk);
+	xl_parse_block(def, &def->blk);
 	def->retval = xl_parse_intexpr();
 }
 
-void xl_parse_block(struct xallang_block *blk)
+void xl_parse_block(struct xallang_definition *def, struct xallang_block *blk)
 {
 	while (skip_whitespace(), *stream == '(') {
 		struct xallang_statement stmt = {0};
-		xl_parse_statement(&stmt);
+		xl_parse_statement(def, &stmt);
 		buf_push(blk->stmts, stmt);
 	}
 }
 
-void xl_parse_statement(struct xallang_statement *stmt)
+void xl_parse_statement(struct xallang_definition *def, struct xallang_statement *stmt)
 {
 	if (*stream++ != '(') error("expected a '(' at the first token in a statement");
 	skip_whitespace();
 	if (MATCH_KW("set")) {
+		extern struct identifier *idlist_find(struct identifier *buf, struct identifier id);
 		stmt->xset.id = parse_cidentifier();
+		if (!idlist_find(def->locals, stmt->xset.id) && !idlist_find(def->params, stmt->xset.id))
+			buf_push(def->locals, stmt->xset.id);
 		stmt->xset.val = xl_parse_intexpr();
 	} else if (MATCH_KW("if")) {
 		stmt->xif.cond = xl_parse_boolexpr();
 		skip_whitespace();
 		if (*stream++ != '(') error("expected a '(' token before the start of if's then block");
-		xl_parse_block(&stmt->xif.thenb);
+		xl_parse_block(def, &stmt->xif.thenb);
 		skip_whitespace();
 		if (*stream++ != ')') error("expected a ')' token before the end of if's then block");
 		skip_whitespace();
 		if (*stream++ != '(') error("expected a '(' token before the start of if's else block");
-		xl_parse_block(&stmt->xif.elseb);
+		xl_parse_block(def, &stmt->xif.elseb);
 		skip_whitespace();
 		if (*stream++ != ')') error("expected a ')' token before the end of if's else block");
 	} else if (MATCH_KW("while")) {
 		stmt->xwhile.cond = xl_parse_boolexpr();
-		xl_parse_block(&stmt->xwhile.body);
+		xl_parse_block(def, &stmt->xwhile.body);
 	} else {
 		error("unknown statement kind");
 	}
