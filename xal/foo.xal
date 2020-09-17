@@ -1,4 +1,3 @@
-#!/home/yagi/dev/c/comp/main
 # this is a comment
 
 (def foo ()
@@ -7,7 +6,7 @@
 )
 
 (def bar (a, b) # this function adds a and b
-	(set c 5)
-	c
+	# (set c 5)
+	5
 )
 

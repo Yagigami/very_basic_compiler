@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdnoreturn.h>
+#include <assert.h>
+#include <string.h>
 
 
 // memory
@@ -36,15 +38,28 @@ struct _stretchy_buf {
 #define buf_len(x) ((x) ? _buf_len((x)): 0)
 #define buf_cap(x) ((x) ? _buf_cap((x)): 0)
 #define buf_fits(x, n) (buf_len((x)) >= (n))
-#define buf_fit(x, n) (buf_fits((x), (n)) ? (x): ((x) = _buf_resize((x), sizeof (struct _stretchy_buf) + (n) * 2 * sizeof *(x))))
+#define buf_fit(x, n) (buf_fits((x), (n)) ? (x): ((x) = _buf_resize((x), (n), 2 * sizeof *(x))))
 #define buf_push(x, ...) (buf_fit((x), buf_len(x)+1), (x)[_buf_len((x))++] = (__VA_ARGS__))
 #define buf_fini(x) xfree(_buf_hdr((x)))
+#define buf_cat(dst, src) (buf_fit((dst), buf_len((dst)) + buf_len((src))), (dst) = _buf_cat(_buf_hdr((dst)), _buf_hdr((src)), sizeof *(dst)))
 
-static inline void *_buf_resize(void *old, size_t sz)
+static inline void *_buf_resize(void *old, size_t sz, size_t cnt)
 {
-	if (old) return ((struct _stretchy_buf *) xrealloc(_buf_hdr(old), sz))->mem;
-	struct _stretchy_buf *buf = xcalloc(1, sz);
+	ssize_t len = buf_len(old);
+	struct _stretchy_buf *buf = xrealloc(old ? _buf_hdr(old): old, sizeof *buf + cnt * sz);
+	buf->len = len;
+	buf->cap = cnt;
 	return buf->mem;
+}
+
+static inline void *_buf_cat(struct _stretchy_buf *dst, struct _stretchy_buf *src, size_t sz)
+{
+	if (src == (struct _stretchy_buf *) -offsetof(struct _stretchy_buf, mem))
+		goto end;
+	assert(dst->cap >= dst->len + src->len);
+	memcpy(dst->mem + dst->len * sz, src->mem, src->len * sz);
+end:
+	return dst->mem;
 }
 
 // stringop

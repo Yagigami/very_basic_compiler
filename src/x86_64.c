@@ -145,6 +145,7 @@ static const char *local2str(struct ir_definition *def, struct identifier *id)
 		if (cur->len == id->len && strncmp(cur->name, id->name, cur->len) == 0)
 			return reg2str[cur - start];
 	}
+	fprintf(stderr, "tried finding id \"%.*s\"\n", (int) id->len, id->name);
 	assert(0);
 }
 

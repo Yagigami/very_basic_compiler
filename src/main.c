@@ -14,8 +14,10 @@ const char *stream;
 void buf_test(void)
 {
 	struct { float *buf; } s = { NULL };
+	float *buf = NULL;
 	buf_push(s.buf, 1.4f);
 	buf_push(s.buf, -.000014f);
+	buf_cat(buf, s.buf);
 	buf_fini(s.buf);
 }
 
@@ -40,6 +42,9 @@ int main(int argc, char **argv)
 	stream = blob.data;
 	xl_parse_program(&pgrm);
 
+	ir_trs_program(&ir_pgrm, &pgrm);
+
+	/*
 	irf_name = ".deleteme.ir";
 	ir_file = fopen(irf_name, "w");
 	ir_gen_program(ir_file, &pgrm);
@@ -48,8 +53,10 @@ int main(int argc, char **argv)
 	if ((ret = load_file(&ir_blob, irf_name))) goto ir;
 	stream = ir_blob.data;
 	ir_parse_program(&ir_pgrm);
+	*/
 
 	ax64_gen_program(stdout, &ir_pgrm);
+
 	ret = 0;
 ir:
 	unload_file(&blob);

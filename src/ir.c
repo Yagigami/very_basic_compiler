@@ -162,6 +162,8 @@ void ir_gen_statement(FILE *f, struct xallang_statement *stmt)
 	fprintf(f, "\n");
 }
 
+static uint64_t unique_id = 0;
+
 void ir_gen_intexpr(FILE *f, struct xallang_intexpression *iexpr)
 {
 	switch (iexpr->kind) {
@@ -195,4 +197,70 @@ void ir_dump_definition(FILE *f, int indent, struct ir_definition *def);
 void ir_dump_statement(FILE *f, int indent, struct ir_statement *stmt);
 void ir_dump_operand(FILE *f, int indent, struct ir_operand *op);
 */
+
+void ir_trs_program(struct ir_program *ipgrm, struct xallang_program *xpgrm)
+{
+	for (ssize_t i = 0; i < buf_len(xpgrm->defs); i++) {
+		struct ir_definition idef = {0};
+		ir_trs_definition(&idef, xpgrm->defs + i);
+		buf_push(ipgrm->defs, idef);
+	}
+}
+
+void ir_trs_definition(struct ir_definition *idef, struct xallang_definition *xdef)
+{
+	idef->name = xdef->name;
+	
+	buf_cat(idef->locals, xdef->params);
+	buf_cat(idef->locals, xdef->locals);
+
+	for (ssize_t i = 0; i < buf_len(xdef->blk.stmts); i++) {
+		ir_trs_statement(idef->stmts, xdef->blk.stmts + i);
+	}
+	
+	struct ir_operand *retv = NULL;
+	buf_fit(retv, 1);
+	ir_trs_intexpr(retv, xdef->retval);
+	buf_push(idef->stmts, (struct ir_statement){ .kind = IR_INSTR, .instr = IRINSTR_RET, .ops = retv });
+}
+
+void ir_trs_statement(struct ir_statement *istmts, struct xallang_statement *xstmt)
+{
+	switch (xstmt->kind) {
+	case IRINSTR_SET:
+		break;
+	case XALLANG_IF:
+	case XALLANG_WHILE:
+	default:
+		assert(0);
+	}
+}
+
+void ir_trs_intexpr(struct ir_operand *iop, struct xallang_intexpression *xiexpr)
+{
+	switch (xiexpr->kind) {
+	case XALLANG_INT:
+		iop->kind = IR_HEX;
+		iop->oint = xiexpr->xint;
+		break;
+	case XALLANG_ID:
+		iop->kind = IR_VAR;
+		iop->oid = xiexpr->xid;
+		break;
+	case XALLANG_SUM:
+	default:
+		assert(0);
+	}
+}
+
+void ir_trs_boolexpr(struct ir_operand *iop, struct xallang_boolexpression *xbexpr)
+{
+	switch (xbexpr->kind) {
+	case XALLANG_NOT:
+	case XALLANG_LT:
+	case XALLANG_EQ:
+	default:
+		assert(0);
+	}
+}
 

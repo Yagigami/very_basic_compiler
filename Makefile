@@ -15,7 +15,7 @@ WARNINGS := -Wall -Wextra -Wformat=2 -Wformat-overflow=2 -Winit-self     \
 	-Wignored-qualifiers               -Wstrict-aliasing=3           \
 	-Walloca -Warray-bounds -Wshadow -Wpointer-arith -Wuninitialized \
 	-Wstrict-prototypes -Wredundant-decls -Wunreachable-code         \
-	-Wmissing-field-initializers -Wunused
+	                             -Wunused
 LIB      :=
 LIBD     :=
 
