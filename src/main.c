@@ -18,6 +18,12 @@ void buf_test(void)
 	buf_push(s.buf, 1.4f);
 	buf_push(s.buf, -.000014f);
 	buf_cat(buf, s.buf);
+	assert(buf[0] == 1.4f);
+	assert(buf[1] == -.000014f);
+	buf_cat(buf, s.buf);
+	assert(buf_len(buf) == 4);
+	assert(buf[2] == 1.4f);
+	assert(buf[3] == -.000014f);
 	buf_fini(s.buf);
 }
 
@@ -54,6 +60,8 @@ int main(int argc, char **argv)
 	stream = ir_blob.data;
 	ir_parse_program(&ir_pgrm);
 	*/
+
+	// ir_dump_program(stdout, 0, &ir_pgrm);
 
 	ax64_gen_program(stdout, &ir_pgrm);
 

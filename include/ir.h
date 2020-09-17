@@ -58,8 +58,8 @@ void ir_gen_ident(FILE *f, struct identifier id);
 
 void ir_trs_program(struct ir_program *ipgrm, struct xallang_program *xpgrm);
 void ir_trs_definition(struct ir_definition *idef, struct xallang_definition *xdef);
-void ir_trs_statement(struct ir_statement *istmts, struct xallang_statement *xstmt);
-void ir_trs_intexpr(struct ir_operand *iop, struct xallang_intexpression *xiexpr);
+void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstmt);
+void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct xallang_intexpression *xiexpr);
 void ir_trs_boolexpr(struct ir_operand *iop, struct xallang_boolexpression *xbexpr);
 
 void ir_dump_program(FILE *f, int indent, struct ir_program *pgrm);

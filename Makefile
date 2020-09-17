@@ -25,7 +25,7 @@ LDFLAGS = $(addprefix -l,$(LIB)) $(addprefix -L,$(LIBD))
 ifeq ($(MODE),release)
 	CFLAGS += -O3 -DNDEBUG
 else
-	CFLAGS +=
+	CFLAGS += -fsanitize=address,undefined
 endif
 
 SOURCES = $(shell find $(SRC) -type f -name "*.c")

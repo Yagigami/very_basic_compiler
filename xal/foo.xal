@@ -6,7 +6,7 @@
 )
 
 (def bar (a, b) # this function adds a and b
-	# (set c 5)
-	5
+	(set c (+ a b))
+	c
 )
 
