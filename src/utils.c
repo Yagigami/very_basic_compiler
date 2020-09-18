@@ -13,6 +13,8 @@
 #include "utils.h"
 
 
+extern const char *stream;
+
 void *xmalloc(ssize_t sz)
 {
 	void *p = malloc(sz);
@@ -84,7 +86,6 @@ int unload_file(struct memory_blob *blob)
 
 void error(const char *msg, ...)
 {
-	extern const char *stream;
 	fprintf(stderr, "error (%.32s): ", stream);
 	va_list args;
 	va_start(args, msg);
@@ -96,7 +97,6 @@ void error(const char *msg, ...)
 
 void skip_whitespace(void)
 {
-	extern const char *stream;
 	while (*stream == '#' || isspace(*stream)) {
 		if (*stream == '#') do stream++; while (*stream != '\n');
 		stream++;
@@ -105,8 +105,24 @@ void skip_whitespace(void)
 
 void skip_whitespace_nonl(void)
 {
-	extern const char *stream;
 	while (*stream == '#' || (isspace(*stream) && *stream != '\n')) {
 		if (*stream++ == '#') do stream++; while (*stream != '\n');
 	}
+}
+
+struct identifier *id_find(struct identifier *buf, struct identifier id)
+{
+	for (ssize_t i = 0; i < buf_len(buf); i++) {
+		if (id.len == buf[i].len &&
+		strncmp(id.name, buf[i].name, id.len) == 0)
+			return buf + i;
+	}
+	return NULL;
+}
+
+int id_cmp(struct identifier id1, struct identifier id2)
+{
+	ssize_t d = id1.len - id2.len;
+	if (d) return d;
+	return strncmp(id1.name, id2.name, id1.len);
 }

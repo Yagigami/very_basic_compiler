@@ -281,7 +281,7 @@ void ir_trs_definition(struct ir_definition *idef, struct xallang_definition *xd
 {
 	idef->name = xdef->name;
 	
-	buf_cat(idef->locals, xdef->params);
+	buf_cat(idef->params, xdef->params);
 	buf_cat(idef->locals, xdef->locals);
 
 	for (ssize_t i = 0; i < buf_len(xdef->blk.stmts); i++) {
@@ -289,21 +289,21 @@ void ir_trs_definition(struct ir_definition *idef, struct xallang_definition *xd
 	}
 	
 	struct ir_operand *retv = NULL;
-	buf_fit(retv, 1);
-	ir_trs_intexpr(idef, retv, xdef->retval);
-	_buf_len(retv) = 1;
+	struct ir_operand op;
+	ir_trs_intexpr(idef, &op, xdef->retval);
+	buf_push(retv, op);
 	buf_push(idef->stmts, (struct ir_statement){ .kind = IR_INSTR, .instr = IRINSTR_RET, .ops = retv });
 }
 
 void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstmt)
 {
 	struct ir_operand *ops = NULL;
+	struct ir_operand op;
 	switch (xstmt->kind) {
 	case XALLANG_SET:
-		buf_fit(ops, 2);
 		buf_push(ops, (struct ir_operand){ .kind = IR_VAR, .oid = xstmt->xset.id });
-		ir_trs_intexpr(idef, ops + 1, xstmt->xset.val);
-		_buf_len(ops) = 2;
+		ir_trs_intexpr(idef, &op, xstmt->xset.val);
+		buf_push(ops, op);
 		buf_push(idef->stmts, (struct ir_statement){
 				.kind = IR_INSTR,
 				.instr = IRINSTR_SET,
@@ -320,6 +320,7 @@ void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstm
 void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct xallang_intexpression *xiexpr)
 {
 	struct ir_operand *ops = NULL;
+	struct ir_operand op;
 	struct identifier id;
 	switch (xiexpr->kind) {
 	case XALLANG_INT:
@@ -339,11 +340,11 @@ void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct x
 				.instr = IRINSTR_LOCAL, .ops = ops });
 		ops = NULL;
 		buf_fit(ops, 3);
-		assert(buf_fits(ops, 3));
 		buf_push(ops, (struct ir_operand){ .kind = IR_VAR, .oid = id });
-		ir_trs_intexpr(idef, ops + 1, xiexpr->lhs);
-		ir_trs_intexpr(idef, ops + 2, xiexpr->rhs);
-		_buf_len(ops) = 3;
+		ir_trs_intexpr(idef, &op, xiexpr->lhs);
+		buf_push(ops, op);
+		ir_trs_intexpr(idef, &op, xiexpr->rhs);
+		buf_push(ops, op);
 		buf_push(idef->stmts, (struct ir_statement){ .kind = IR_INSTR,
 				.instr = IRINSTR_ADD, .ops = ops });
 

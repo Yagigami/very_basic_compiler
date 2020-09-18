@@ -37,14 +37,14 @@ struct _stretchy_buf {
 
 #define buf_len(x) ((x) ? _buf_len((x)): 0)
 #define buf_cap(x) ((x) ? _buf_cap((x)): 0)
-// TODO: should be buf_cap - buf_len?
-#define buf_fits(x, n) (buf_len((x)) >= (n))
-#define buf_fit(x, n) (buf_fits((x), (n)) ? (x): ((x) = _buf_resize((x), (n), 2 * sizeof *(x))))
+#define buf_fits(x, n) (buf_cap((x)) - buf_len((x)) > (n))
+// #define buf_fits(x, n) (buf_len((x)) >= (n))
+#define buf_fit(x, n) (buf_fits((x), (n)) ? (x): ((x) = _buf_resize((x), (n) * 2, sizeof *(x))))
 #define buf_push(x, ...) (buf_fit((x), buf_len(x)+1), (x)[_buf_len((x))++] = (__VA_ARGS__))
 #define buf_fini(x) xfree(_buf_hdr((x)))
 #define buf_cat(dst, src) (buf_fit((dst), buf_len((dst)) + buf_len((src))), (dst) = _buf_cat(_buf_hdr((dst)), _buf_hdr((src)), sizeof *(dst)))
 
-static inline void *_buf_resize(void *old, size_t sz, size_t cnt)
+static inline void *_buf_resize(void *old, size_t cnt, size_t sz)
 {
 	ssize_t len = buf_len(old);
 	struct _stretchy_buf *buf = xrealloc(old ? _buf_hdr(old): old, sizeof *buf + cnt * sz);
@@ -70,6 +70,14 @@ end:
 #define MATCH_KW(kw) (CMP((kw), stream) == 0 && (stream += sizeof (kw)-1, 1))
 void skip_whitespace(void);
 void skip_whitespace_nonl(void);
+
+struct identifier {
+	const char *name;
+	ptrdiff_t len;
+};
+
+struct identifier *id_find(struct identifier *buf, struct identifier id);
+int id_cmp(struct identifier id1, struct identifier id2);
 
 // err
 noreturn void error(const char *msg, ...);

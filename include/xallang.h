@@ -5,11 +5,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "utils.h"
 
-struct identifier {
-	const char *name;
-	ptrdiff_t len;
-};
 
 enum xallang_type {
 	XALLANG_SET, XALLANG_IF, XALLANG_WHILE,

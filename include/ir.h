@@ -23,6 +23,7 @@ struct ir_program {
 struct ir_definition {
 	struct identifier name;
 	struct ir_statement *stmts;
+	struct identifier *params;
 	struct identifier *locals;
 };
 

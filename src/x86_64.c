@@ -10,13 +10,14 @@
 
 // increasing "cost"
 enum ax64_reg {
-	AX64_RAX,
 	AX64_RDI,
 	AX64_RSI,
 	AX64_RDX,
 	AX64_RCX,
 	AX64_R9,
 	AX64_R8,
+	// retval
+	AX64_RAX,
 	// saved regs
 	AX64_RBX,
 	AX64_RBP,
@@ -40,11 +41,13 @@ enum ax64_reg {
 };
 
 static const char *reg2str[] = {
-	[AX64_RAX] = "%rax",
 	[AX64_RDI] = "%rdi",
 	[AX64_RSI] = "%rsi",
 	[AX64_RDX] = "%rdx",
 	[AX64_RCX] = "%rcx",
+	[AX64_R9 ] = "%r9 ",
+	[AX64_R8 ] = "%r8 ",
+	[AX64_RAX] = "%rax",
 	[AX64_RBX] = "%rbx",
 	[AX64_RBP] = "%rbp",
 	[AX64_RSP] = "%rsp",
@@ -99,6 +102,18 @@ void ax64_gen_statement_instr(FILE *f, struct ir_definition *def, struct ir_stat
 	case IRINSTR_LOCAL:
 		return;
 	case IRINSTR_ADD:
+		if (id_cmp(stmt->ops[0].oid, stmt->ops[1].oid) != 0) {
+			fprintf(f, "\tmov ");
+			ax64_gen_operand(f, def, stmt->ops + 1);
+			fprintf(f, ", ");
+			ax64_gen_operand(f, def, stmt->ops + 0);
+			fprintf(f, "\n");
+		}
+		fprintf(f, "\tadd ");
+		ax64_gen_operand(f, def, stmt->ops + 2);
+		fprintf(f, ", ");
+		ax64_gen_operand(f, def, stmt->ops + 0);
+		break;
 		if (stmt->ops[0].oid.len == stmt->ops[1].oid.len && strncmp(stmt->ops[0].oid.name, stmt->ops[1].oid.name, stmt->ops[0].oid.len) == 0) {
 			fprintf(f, "\tadd ");
 			ax64_gen_operand(f, def, stmt->ops + 2);
@@ -140,11 +155,12 @@ void ax64_gen_statement(FILE *f, struct ir_definition *def, struct ir_statement 
 
 static const char *local2str(struct ir_definition *def, struct identifier *id)
 {
-	for (struct identifier *start = def->locals, *end = start + buf_len(def->locals), *cur = start;
-			cur != end; cur++) {
-		if (cur->len == id->len && strncmp(cur->name, id->name, cur->len) == 0)
-			return reg2str[cur - start];
-	}
+	struct identifier *match = id_find(def->params, *id);
+	if (match)
+		return reg2str[match - def->params + AX64_ARG0];
+	match = id_find(def->locals, *id);
+	if (match)
+		return reg2str[match - def->locals + buf_len(def->params)];
 	fprintf(stderr, "tried finding id \"%.*s\"\n", (int) id->len, id->name);
 	assert(0);
 }

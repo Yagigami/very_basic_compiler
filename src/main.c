@@ -13,18 +13,35 @@ const char *stream;
 
 void buf_test(void)
 {
-	struct { float *buf; } s = { NULL };
 	float *buf = NULL;
-	buf_push(s.buf, 1.4f);
-	buf_push(s.buf, -.000014f);
-	buf_cat(buf, s.buf);
-	assert(buf[0] == 1.4f);
-	assert(buf[1] == -.000014f);
-	buf_cat(buf, s.buf);
-	assert(buf_len(buf) == 4);
-	assert(buf[2] == 1.4f);
-	assert(buf[3] == -.000014f);
-	buf_fini(s.buf);
+	buf_push(buf, 1.4f);
+	buf_push(buf, -.000014f);
+	buf_push(buf, 6.789f);
+	buf_push(buf, 6.789f);
+	buf_push(buf, 6.789f);
+	buf_push(buf, 6.789f);
+	buf_push(buf, 6.789f);
+	buf_push(buf, 6.789f);
+	buf_push(buf, 6.789f);
+	buf_fini(buf);
+	struct s { uint64_t a[7]; } *b = NULL;
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	/*
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
+	*/
+	buf_fini(b);
 }
 
 int main(int argc, char **argv)
