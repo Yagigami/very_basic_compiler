@@ -151,7 +151,7 @@ void ax64_gen_statement(FILE *f, struct ir_definition *def, struct ir_statement 
 		ax64_gen_operand(f, def, stmt->ops + 0);
 		break;
 	case IRINSTR_JNZ:
-		fprintf(f, "jnz ");
+		fprintf(f, "jne ");
 		ax64_gen_operand(f, def, stmt->ops + 0);
 		break;
 	case IRINSTR_JL:

@@ -151,7 +151,7 @@ void ir_gen_statement(FILE *f, struct xallang_statement *stmt)
 	fprintf(f, "\n");
 }
 
-static uint64_t unique_id = 0;
+uint64_t unique_id = 0;
 
 static struct identifier unique_identifier(const char *base)
 {
@@ -360,6 +360,25 @@ void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstm
 		idef->stmts[melse].ops = ops;
 		break;
 	case XALLANG_WHILE:
+		buf_push(idef->stmts, (struct ir_statement){ .instr = IRINSTR_JMP });
+		mthen = buf_len(idef->stmts) - 1;
+		buf_push(idef->labels, mthen + 1);
+		ir_trs_block(idef, &xstmt->xwhile.body);
+		mend = buf_len(idef->stmts) - 1;
+		buf_push(idef->labels, mend + 1);
+		buf_push(ops, (struct ir_operand){
+				.kind = IR_LABEL,
+				.olbl = mend + 1,
+			});
+		idef->stmts[mthen].ops = ops;
+		ir_trs_boolexpr(idef, &skip_cond, xstmt->xwhile.cond);
+		ops = NULL;
+		buf_push(ops, (struct ir_operand){
+				.kind = IR_LABEL,
+				.olbl = mthen + 1,
+			});
+		buf_push(idef->stmts, (struct ir_statement){ .instr = skip_cond, .ops = ops});
+		break;
 	default:
 		assert(0);
 	}
