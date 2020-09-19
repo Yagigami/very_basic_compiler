@@ -82,75 +82,86 @@ void ax64_gen_program(FILE *f, struct ir_program *pgrm)
 	}
 }
 
-void ax64_gen_statement_instr(FILE *f, struct ir_definition *def, struct ir_statement *stmt)
+const char *label_str(ssize_t id)
 {
+	static char str[32] = ".L";
+	sprintf(str + 2, "%zd", id);
+	return str;
+}
+
+void ax64_gen_statement(FILE *f, struct ir_definition *def, struct ir_statement *stmt)
+{
+	for (ssize_t i = 0; i < buf_len(def->labels); i++) {
+		struct ir_statement *s = def->stmts + def->labels[i];
+		if (s == stmt) {
+			fprintf(f, "%s:\n", label_str(def->labels[i]));
+		}
+	}
+	if (stmt->instr == IRINSTR_LOCAL) return;
+	fprintf(f, "\t");
 	switch (stmt->instr) {
 	case IRINSTR_SET:
-		fprintf(f, "\tmov ");
+		fprintf(f, "mov ");
 		ax64_gen_operand(f, def, stmt->ops + 1); // src
 		fprintf(f, ", ");
 		ax64_gen_operand(f, def, stmt->ops + 0); // dst
 		break;
 	case IRINSTR_RET:
-		fprintf(f, "\tmov ");
+		fprintf(f, "mov ");
 		ax64_gen_operand(f, def, stmt->ops + 0);
 		fprintf(f, ", ");
 		fprintf(f, "%.*s", (int) ax64_retreg.len, ax64_retreg.name);
-		fprintf(f, "\n");
-		fprintf(f, "\tret");
+		fprintf(f, "\n\t");
+		fprintf(f, "ret");
 		break;
 	case IRINSTR_LOCAL:
+		assert(0);
 		return;
 	case IRINSTR_ADD:
 		if (id_cmp(stmt->ops[0].oid, stmt->ops[1].oid) != 0) {
-			fprintf(f, "\tmov ");
+			fprintf(f, "mov ");
 			ax64_gen_operand(f, def, stmt->ops + 1);
 			fprintf(f, ", ");
 			ax64_gen_operand(f, def, stmt->ops + 0);
-			fprintf(f, "\n");
+			fprintf(f, "\n\t");
 		}
-		fprintf(f, "\tadd ");
+		fprintf(f, "add ");
 		ax64_gen_operand(f, def, stmt->ops + 2);
 		fprintf(f, ", ");
 		ax64_gen_operand(f, def, stmt->ops + 0);
 		break;
-		if (stmt->ops[0].oid.len == stmt->ops[1].oid.len && strncmp(stmt->ops[0].oid.name, stmt->ops[1].oid.name, stmt->ops[0].oid.len) == 0) {
-			fprintf(f, "\tadd ");
-			ax64_gen_operand(f, def, stmt->ops + 2);
-			fprintf(f, ", ");
+	case IRINSTR_JMP:
+		fprintf(f, "jmp ");
+		ax64_gen_operand(f, def, stmt->ops + 0);
+		break;
+	case IRINSTR_CMP:
+		fprintf(f, "cmp ");
+		if (stmt->ops[0].kind == IR_HEX) {
 			ax64_gen_operand(f, def, stmt->ops + 0);
-		} else {
-			fprintf(f, "\tlea ");
-			fprintf(f, "(");
-			ax64_gen_operand(f, def, stmt->ops + 2);
 			fprintf(f, ", ");
 			ax64_gen_operand(f, def, stmt->ops + 1);
-			fprintf(f, "), ");
+		} else {
+			ax64_gen_operand(f, def, stmt->ops + 1);
+			fprintf(f, ", ");
 			ax64_gen_operand(f, def, stmt->ops + 0);
 		}
 		break;
-	case IRINSTR_JMP:
-		fprintf(f, "\tjmp ");
-		fprintf(f, "%.*s", (int) stmt->ops[0].oid.len, stmt->ops[0].oid.name);
+	case IRINSTR_JZ:
+		fprintf(f, "je ");
+		ax64_gen_operand(f, def, stmt->ops + 0);
+		break;
+	case IRINSTR_JNZ:
+		fprintf(f, "jnz ");
+		ax64_gen_operand(f, def, stmt->ops + 0);
+		break;
+	case IRINSTR_JL:
+		fprintf(f, "jl");
+		ax64_gen_operand(f, def, stmt->ops + 0);
 		break;
 	default:
 		assert(0);
 	}
 	fprintf(f, "\n");
-}
-
-void ax64_gen_statement(FILE *f, struct ir_definition *def, struct ir_statement *stmt)
-{
-	switch (stmt->kind) {
-	case IR_LABELED:
-		fprintf(f, "%.*s:\n", (int) stmt->lbl.len, stmt->lbl.name);
-		break;
-	case IR_INSTR:
-		ax64_gen_statement_instr(f, def, stmt);
-		break;
-	default:
-		assert(0);
-	}
 }
 
 static const char *local2str(struct ir_definition *def, struct identifier *id)
@@ -173,6 +184,9 @@ void ax64_gen_operand(FILE *f, struct ir_definition *def, struct ir_operand *op)
 		break;
 	case IR_VAR:
 		fprintf(f, "%s", local2str(def, &op->oid));
+		break;
+	case IR_LABEL:
+		fputs(label_str(op->olbl), f);
 		break;
 	default:
 		assert(0);

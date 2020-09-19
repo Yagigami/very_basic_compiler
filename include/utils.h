@@ -40,6 +40,7 @@ struct _stretchy_buf {
 #define buf_fits(x, n) (buf_cap((x)) - buf_len((x)) > (n))
 // #define buf_fits(x, n) (buf_len((x)) >= (n))
 #define buf_fit(x, n) (buf_fits((x), (n)) ? (x): ((x) = _buf_resize((x), (n) * 2, sizeof *(x))))
+#define buf_reserve(x, n) buf_fit((x), buf_len((x)) + (n))
 #define buf_push(x, ...) (buf_fit((x), buf_len(x)+1), (x)[_buf_len((x))++] = (__VA_ARGS__))
 #define buf_fini(x) xfree(_buf_hdr((x)))
 #define buf_cat(dst, src) (buf_fit((dst), buf_len((dst)) + buf_len((src))), (dst) = _buf_cat(_buf_hdr((dst)), _buf_hdr((src)), sizeof *(dst)))

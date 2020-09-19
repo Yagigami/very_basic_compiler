@@ -10,10 +10,10 @@
 
 enum ir_type {
 	IR_UNK,
-	IR_LABELED, IR_INSTR,
-	IR_HEX, IR_VAR,
+	IR_HEX, IR_VAR, IR_LABEL,
 	IRINSTR_SET, IRINSTR_RET, IRINSTR_LOCAL,
-	IRINSTR_ADD, IRINSTR_JMP,
+	IRINSTR_ADD, IRINSTR_CMP,
+	IRINSTR_JMP, IRINSTR_JZ, IRINSTR_JNZ, IRINSTR_JL,
 };
 
 struct ir_program {
@@ -25,14 +25,12 @@ struct ir_definition {
 	struct ir_statement *stmts;
 	struct identifier *params;
 	struct identifier *locals;
+	ssize_t *labels;
 };
 
 struct ir_statement {
-	enum ir_type kind;
-	union {
-		struct identifier lbl;
-		struct { enum ir_type instr; struct ir_operand *ops; };
-	};
+	enum ir_type instr; 
+	struct ir_operand *ops;
 };
 
 struct ir_operand {
@@ -40,6 +38,7 @@ struct ir_operand {
 	union {
 		uint64_t oint;
 		struct identifier oid;
+		ssize_t olbl;
 	};
 };
 
@@ -59,9 +58,10 @@ void ir_gen_ident(FILE *f, struct identifier id);
 
 void ir_trs_program(struct ir_program *ipgrm, struct xallang_program *xpgrm);
 void ir_trs_definition(struct ir_definition *idef, struct xallang_definition *xdef);
+void ir_trs_block(struct ir_definition *idef, struct xallang_block *blk);
 void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstmt);
 void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct xallang_intexpression *xiexpr);
-void ir_trs_boolexpr(struct ir_operand *iop, struct xallang_boolexpression *xbexpr);
+void ir_trs_boolexpr(struct ir_definition *idef, enum ir_type *flag, struct xallang_boolexpression *xbexpr);
 
 void ir_dump_program(FILE *f, int indent, struct ir_program *pgrm);
 void ir_dump_definition(FILE *f, int indent, struct ir_definition *def);

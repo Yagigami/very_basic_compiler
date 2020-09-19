@@ -80,12 +80,13 @@ void xl_parse_statement(struct xallang_definition *def, struct xallang_statement
 	if (*stream++ != '(') error("expected a '(' at the first token in a statement");
 	skip_whitespace();
 	if (MATCH_KW("set")) {
-		extern struct identifier *idlist_find(struct identifier *buf, struct identifier id);
+		stmt->kind = XALLANG_SET;
 		stmt->xset.id = parse_cidentifier();
-		if (!idlist_find(def->locals, stmt->xset.id) && !idlist_find(def->params, stmt->xset.id))
+		if (!id_find(def->locals, stmt->xset.id) && !id_find(def->params, stmt->xset.id))
 			buf_push(def->locals, stmt->xset.id);
 		stmt->xset.val = xl_parse_intexpr();
 	} else if (MATCH_KW("if")) {
+		stmt->kind = XALLANG_IF;
 		stmt->xif.cond = xl_parse_boolexpr();
 		skip_whitespace();
 		if (*stream++ != '(') error("expected a '(' token before the start of if's then block");
@@ -98,6 +99,7 @@ void xl_parse_statement(struct xallang_definition *def, struct xallang_statement
 		skip_whitespace();
 		if (*stream++ != ')') error("expected a ')' token before the end of if's else block");
 	} else if (MATCH_KW("while")) {
+		stmt->kind = XALLANG_WHILE;
 		stmt->xwhile.cond = xl_parse_boolexpr();
 		xl_parse_block(def, &stmt->xwhile.body);
 	} else {
@@ -143,10 +145,12 @@ struct xallang_boolexpression *xl_parse_boolexpr(void)
 		stream++;
 		skip_whitespace();
 		if (*stream == '=') {
+			stream++;
 			bexpr->kind = XALLANG_EQ;
 			bexpr->lhs = xl_parse_intexpr();
 			bexpr->rhs = xl_parse_intexpr();
 		} else if (*stream == '<') {
+			stream++;
 			bexpr->kind = XALLANG_LT;
 			bexpr->lhs = xl_parse_intexpr();
 			bexpr->rhs = xl_parse_intexpr();
@@ -295,5 +299,6 @@ void xl_dump_boolexpr(FILE *f, int indent, struct xallang_boolexpression *bexpr)
 		assert(0);
 		break;
 	}
+	fprintln(f, indent, "}");
 }
 

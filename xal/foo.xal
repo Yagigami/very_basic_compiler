@@ -1,5 +1,28 @@
 # this is a comment
 
+(def alt (f)
+	(set a 0)
+	(if (= f 1)
+	 (
+		(set a 666)
+		(set a 31)
+	 )
+	 (
+		(set a 31)
+		(set a 31)
+		(if (= 666 a)
+		 (
+		 )
+		 (
+		 	(set a (+ 9 f))
+		 )
+		)
+		(set a 31)
+	 )
+	)
+	a
+)
+
 (def foo ()
 	# so is this
 	1

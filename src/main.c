@@ -28,7 +28,6 @@ void buf_test(void)
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
-	/*
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
@@ -40,7 +39,6 @@ void buf_test(void)
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
 	buf_push(b, (struct s){ { 1, 2, 3, 4, 5, 6, 7} });
-	*/
 	buf_fini(b);
 }
 
@@ -65,7 +63,7 @@ int main(int argc, char **argv)
 	stream = blob.data;
 	xl_parse_program(&pgrm);
 
-	ir_trs_program(&ir_pgrm, &pgrm);
+	// xl_dump_program(stdout, 0, &pgrm);
 
 	/*
 	irf_name = ".deleteme.ir";
@@ -77,6 +75,8 @@ int main(int argc, char **argv)
 	stream = ir_blob.data;
 	ir_parse_program(&ir_pgrm);
 	*/
+
+	ir_trs_program(&ir_pgrm, &pgrm);
 
 	// ir_dump_program(stdout, 0, &ir_pgrm);
 

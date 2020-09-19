@@ -33,39 +33,28 @@ void ir_parse_definition(struct ir_definition *def)
 	stream++;
 }
 
-struct identifier *idlist_find(struct identifier *ids, struct identifier id) {
-	for (ssize_t i = 0; i < buf_len(ids); i++) {
-		if (ids[i].len == id.len && strncmp(ids[i].name, id.name, id.len) == 0)
-			return ids + i;
-	}
-	return NULL;
-}
-
 void ir_parse_statement(struct ir_definition *def, struct ir_statement *stmt)
 {
-	if (skip_whitespace(), *stream != ':') {
-		ssize_t n;
-		stmt->instr = ir_parse_instr(&n);
-		stmt->kind = IR_INSTR;
-		for (ssize_t i = 0; skip_whitespace_nonl(), *stream != '\n'; i++) {
-			if (i) {
-				if (*stream++ != ',') error("expected comma separating instruction operands");
-			}
-			struct ir_operand op = {0};
-			ir_parse_operand(&op);
-			buf_push(stmt->ops, op);
-		}
+	while (skip_whitespace(), *stream == ':') {
 		stream++;
-		if (buf_len(stmt->ops) != n) error("expected %zd operands but got %zd", n, buf_len(stmt->ops));
-
-		if (stmt->instr == IRINSTR_LOCAL)
-			buf_push(def->locals, stmt->ops[0].oid);
-	} else {
-		stream++;
-		stmt->kind = IR_LABELED;
-		stmt->lbl = parse_cidentifier();
-		skip_whitespace();
+		ssize_t idx = buf_len(def->labels);
+		buf_push(def->labels, idx);
 	}
+	ssize_t n;
+	stmt->instr = ir_parse_instr(&n);
+	for (ssize_t i = 0; skip_whitespace_nonl(), *stream != '\n'; i++) {
+		if (i) {
+			if (*stream++ != ',') error("expected comma separating instruction operands");
+		}
+		struct ir_operand op = {0};
+		ir_parse_operand(&op);
+		buf_push(stmt->ops, op);
+	}
+	stream++;
+	if (buf_len(stmt->ops) != n) error("expected %zd operands but got %zd", n, buf_len(stmt->ops));
+
+	if (stmt->instr == IRINSTR_LOCAL)
+		buf_push(def->locals, stmt->ops[0].oid);
 }
 
 void ir_parse_operand(struct ir_operand *op)
@@ -221,12 +210,28 @@ void ir_dump_definition(FILE *f, int indent, struct ir_definition *def)
 	fprintf(f, "\"name\": ");
 	fprintf(f, "\"%.*s\"", (int) def->name.len, def->name.name);
 	fprintln(f, indent + INDENT_SH, ",");
+
+	fprintf(f, "\"params\": [ ");
+	for (ssize_t i = 0; i < buf_len(def->params); i++) {
+		if (i) fprintf(f, ", ");
+		fprintf(f, "\"%.*s\"", (int) def->params[i].len, def->params[i].name);
+	}
+	fprintln(f, indent + INDENT_SH, "],");
+
 	fprintf(f, "\"locals\": [ ");
 	for (ssize_t i = 0; i < buf_len(def->locals); i++) {
 		if (i) fprintf(f, ", ");
 		fprintf(f, "\"%.*s\"", (int) def->locals[i].len, def->locals[i].name);
 	}
 	fprintln(f, indent + INDENT_SH, "],");
+
+	fprintf(f, "\"labels\": [ ");
+	for (ssize_t i = 0; i < buf_len(def->labels); i++) {
+		if (i) fprintf(f, ", ");
+		fprintf(f, "%td", def->labels[i]);
+	}
+	fprintln(f, indent + INDENT_SH, "],");
+
 	fprintln(f, indent + INDENT_SH, "\"stmts\": [");
 	for (ssize_t i = 0; i < buf_len(def->stmts); i++) {
 		if (i) fprintln(f, indent + INDENT_SH, ",");
@@ -237,19 +242,31 @@ void ir_dump_definition(FILE *f, int indent, struct ir_definition *def)
 	fprintln(f, indent, "}");
 }
 
+const char *ir_type2str[] = {
+	[IR_UNK          ] = "<unknown>",
+	[IR_HEX          ] = "<integer>",
+	[IR_VAR          ] = "<identifier>",
+	[IR_LABEL        ] = "<label>",
+	[IRINSTR_SET     ] = "SET",
+	[IRINSTR_RET     ] = "RET",
+	[IRINSTR_LOCAL   ] = "LOCAL",
+	[IRINSTR_ADD     ] = "ADD",
+	[IRINSTR_CMP     ] = "CMP",
+	[IRINSTR_JMP     ] = "JMP",
+	[IRINSTR_JZ      ] = "JZ",
+	[IRINSTR_JNZ     ] = "JNZ",
+	[IRINSTR_JL      ] = "JL",
+};
+
 void ir_dump_statement(FILE *f, int indent, struct ir_statement *stmt)
 {
 	fprintf(f, "{ ");
-	if (stmt->kind == IR_LABELED) {
-		fprintf(f, "\"lbl\": \"%.*s\"", (int) stmt->lbl.len, stmt->lbl.name);
-	} else if (stmt->kind == IR_INSTR) {
-		fprintf(f, "\"instr\": %d, \"ops\": [", stmt->instr);
-		for (ssize_t i = 0; i < buf_len(stmt->ops); i++) {
-			if (i) fprintf(f, ", ");
-			ir_dump_operand(f, indent, stmt->ops + i);
-		}
-		fprintf(f, "]");
-	} else assert(0);
+	fprintf(f, "\"instr\": \"%s\", \"ops\": [", ir_type2str[stmt->instr]);
+	for (ssize_t i = 0; i < buf_len(stmt->ops); i++) {
+		if (i) fprintf(f, ", ");
+		ir_dump_operand(f, indent, stmt->ops + i);
+	}
+	fprintf(f, "]");
 	fprintf(f, " }");
 }
 
@@ -262,6 +279,9 @@ void ir_dump_operand(FILE *f, int indent, struct ir_operand *op)
 		break;
 	case IR_VAR:
 		fprintf(f, "\"%.*s\"", (int) op->oid.len, op->oid.name);
+		break;
+	case IR_LABEL:
+		fprintf(f, "%zd", op->olbl);
 		break;
 	default:
 		assert(0);
@@ -284,33 +304,61 @@ void ir_trs_definition(struct ir_definition *idef, struct xallang_definition *xd
 	buf_cat(idef->params, xdef->params);
 	buf_cat(idef->locals, xdef->locals);
 
-	for (ssize_t i = 0; i < buf_len(xdef->blk.stmts); i++) {
-		ir_trs_statement(idef, xdef->blk.stmts + i);
-	}
+	ir_trs_block(idef, &xdef->blk);
 	
 	struct ir_operand *retv = NULL;
 	struct ir_operand op;
 	ir_trs_intexpr(idef, &op, xdef->retval);
 	buf_push(retv, op);
-	buf_push(idef->stmts, (struct ir_statement){ .kind = IR_INSTR, .instr = IRINSTR_RET, .ops = retv });
+	buf_push(idef->stmts, (struct ir_statement){ .instr = IRINSTR_RET, .ops = retv });
+}
+
+void ir_trs_block(struct ir_definition *idef, struct xallang_block *blk)
+{
+	for (ssize_t i = 0; i < buf_len(blk->stmts); i++) {
+		ir_trs_statement(idef, blk->stmts + i);
+	}
 }
 
 void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstmt)
 {
 	struct ir_operand *ops = NULL;
 	struct ir_operand op;
+	enum ir_type skip_cond;
+	ssize_t mthen, melse, mend;
 	switch (xstmt->kind) {
 	case XALLANG_SET:
 		buf_push(ops, (struct ir_operand){ .kind = IR_VAR, .oid = xstmt->xset.id });
 		ir_trs_intexpr(idef, &op, xstmt->xset.val);
 		buf_push(ops, op);
 		buf_push(idef->stmts, (struct ir_statement){
-				.kind = IR_INSTR,
 				.instr = IRINSTR_SET,
 				.ops = ops,
 			});
 		break;
 	case XALLANG_IF:
+		ir_trs_boolexpr(idef, &skip_cond, xstmt->xif.cond);
+		buf_push(idef->stmts, (struct ir_statement){ .instr = skip_cond });
+		mthen = buf_len(idef->stmts) - 1;
+		ir_trs_block(idef, &xstmt->xif.thenb);
+		buf_push(idef->stmts, (struct ir_statement){ .instr = IRINSTR_JMP });
+		melse = buf_len(idef->stmts) - 1;
+		buf_push(idef->labels, melse + 1);
+		ir_trs_block(idef, &xstmt->xif.elseb);
+		mend = buf_len(idef->stmts) - 1;
+		buf_push(idef->labels, mend + 1);
+		buf_push(ops, (struct ir_operand){
+				.kind = IR_LABEL,
+				.olbl = melse + 1,
+			});
+		idef->stmts[mthen].ops = ops;
+		ops = NULL;
+		buf_push(ops, (struct ir_operand){
+				.kind = IR_LABEL,
+				.olbl = mend + 1,
+			});
+		idef->stmts[melse].ops = ops;
+		break;
 	case XALLANG_WHILE:
 	default:
 		assert(0);
@@ -336,7 +384,7 @@ void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct x
 		buf_push(idef->locals, id);
 
 		buf_push(ops, (struct ir_operand){ .kind = IR_VAR, .oid = id });
-		buf_push(idef->stmts, (struct ir_statement){ .kind = IR_INSTR,
+		buf_push(idef->stmts, (struct ir_statement){
 				.instr = IRINSTR_LOCAL, .ops = ops });
 		ops = NULL;
 		buf_fit(ops, 3);
@@ -345,7 +393,7 @@ void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct x
 		buf_push(ops, op);
 		ir_trs_intexpr(idef, &op, xiexpr->rhs);
 		buf_push(ops, op);
-		buf_push(idef->stmts, (struct ir_statement){ .kind = IR_INSTR,
+		buf_push(idef->stmts, (struct ir_statement){
 				.instr = IRINSTR_ADD, .ops = ops });
 
 		*iop = ops[0];
@@ -358,13 +406,23 @@ void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct x
 	}
 }
 
-void ir_trs_boolexpr(struct ir_operand *iop, struct xallang_boolexpression *xbexpr)
+void ir_trs_boolexpr(struct ir_definition *idef, enum ir_type *skip_cond, struct xallang_boolexpression *xbexpr)
 {
-	(void) iop;
+	struct ir_operand *ops = NULL;
+	struct ir_operand op;
 	switch (xbexpr->kind) {
+	case XALLANG_EQ:
+		ir_trs_intexpr(idef, &op, xbexpr->lhs);
+		buf_push(ops, op);
+		ir_trs_intexpr(idef, &op, xbexpr->rhs);
+		buf_push(ops, op);
+		buf_push(idef->stmts, (struct ir_statement){
+				.instr = IRINSTR_CMP, .ops = ops
+			});
+		*skip_cond = IRINSTR_JNZ;
+		break;
 	case XALLANG_NOT:
 	case XALLANG_LT:
-	case XALLANG_EQ:
 	default:
 		assert(0);
 	}
