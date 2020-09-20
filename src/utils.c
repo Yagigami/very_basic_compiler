@@ -14,6 +14,7 @@
 
 
 extern const char *stream;
+int dev_zero;
 
 void *xmalloc(ssize_t sz)
 {
@@ -84,6 +85,19 @@ int unload_file(struct memory_blob *blob)
 	return munmap(blob->data, blob->size);
 }
 
+__attribute__((constructor))
+void init_dev_zero(void)
+{
+	dev_zero = open("/dev/zero", O_RDWR);
+	assert(dev_zero != -1);
+}
+
+__attribute__((destructor))
+void fini_dev_zero(void)
+{
+	close(dev_zero);
+}
+
 void error(const char *msg, ...)
 {
 	fprintf(stderr, "error (%.32s): ", stream);
@@ -97,8 +111,13 @@ void error(const char *msg, ...)
 
 void skip_whitespace(void)
 {
-	while (*stream == '#' || isspace(*stream)) {
+	while (*stream == '#' || isspace(*stream) || (stream[0] == '/' && stream[1] == '*')) {
 		if (*stream == '#') do stream++; while (*stream != '\n');
+		if (*stream == '/') {
+			stream += 2;
+			while (stream[0] != '*' && stream[1] != '/')
+				stream++;
+		}
 		stream++;
 	}
 }

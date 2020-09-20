@@ -25,6 +25,8 @@ int load_file  (struct memory_blob *blob, const char *path);
 int write_file (struct memory_blob *blob, const char *path);
 int unload_file(struct memory_blob *blob);
 
+extern int dev_zero;
+
 // buf
 struct _stretchy_buf {
 	ssize_t len, cap;

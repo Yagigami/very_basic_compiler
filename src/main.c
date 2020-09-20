@@ -1,3 +1,5 @@
+#include <sys/mman.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -9,7 +11,6 @@
 
 
 const char *stream;
-
 
 void buf_test(void)
 {
@@ -42,6 +43,22 @@ void buf_test(void)
 	buf_fini(b);
 }
 
+void mem_test(void)
+{
+	long (*mem) (long, long) = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE, dev_zero, 0);
+	unsigned char code[] = {
+		0x48, 0x8D, 0x04, 0x37, // lea (%rdi, %rsi, 1), %rax
+		0xC3, // retq
+	};
+	memcpy(mem, code, sizeof code);
+
+	mprotect(mem, 4096, PROT_READ | PROT_EXEC);
+	long r = mem(16, 89);
+
+	assert(r == 16 + 89);
+	munmap(mem, 4096);
+}
+
 int main(int argc, char **argv)
 {
 	int ret = -1;
@@ -52,6 +69,7 @@ int main(int argc, char **argv)
 	FILE *ir_file;
 
 	buf_test();
+	mem_test();
 
 	if (argc != 2) {
 		printf("usage: %s somefile\n", *argv);
@@ -81,6 +99,11 @@ int main(int argc, char **argv)
 	// ir_dump_program(stdout, 0, &ir_pgrm);
 
 	ax64_gen_program(stdout, &ir_pgrm);
+
+	generic_fp *funcs = ax64_bin_program(&ir_pgrm);
+	typedef unsigned long (*rulavproc) (void);
+	rulavproc foo = (rulavproc) funcs[0];
+	assert(foo() == 1);
 
 	ret = 0;
 ir:

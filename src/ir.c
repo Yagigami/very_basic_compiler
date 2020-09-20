@@ -442,6 +442,15 @@ void ir_trs_boolexpr(struct ir_definition *idef, enum ir_type *skip_cond, struct
 		break;
 	case XALLANG_NOT:
 	case XALLANG_LT:
+		ir_trs_intexpr(idef, &op, xbexpr->lhs);
+		buf_push(ops, op);
+		ir_trs_intexpr(idef, &op, xbexpr->rhs);
+		buf_push(ops, op);
+		buf_push(idef->stmts, (struct ir_statement){
+				.instr = IRINSTR_CMP, .ops = ops
+			});
+		*skip_cond = IRINSTR_JGE;
+		break;
 	default:
 		assert(0);
 	}
