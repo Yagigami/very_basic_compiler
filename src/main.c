@@ -101,9 +101,14 @@ int main(int argc, char **argv)
 	ax64_gen_program(stdout, &ir_pgrm);
 
 	generic_fp *funcs = ax64_bin_program(&ir_pgrm);
-	typedef unsigned long (*rulavproc) (void);
+
+	typedef uint64_t (*rulavproc) (void);
 	rulavproc foo = (rulavproc) funcs[0];
 	assert(foo() == 1);
+
+	typedef uint64_t (*rula2ulproc) (uint64_t, uint64_t);
+	rula2ulproc bar = (rula2ulproc) funcs[1];
+	assert(bar(178, 67) == 178 + 2 * 67);
 
 	ret = 0;
 ir:

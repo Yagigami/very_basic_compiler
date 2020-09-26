@@ -44,22 +44,22 @@ enum ax64_reg {
 };
 
 static const byte_t reg2bin[] = {
-	[AX64_RDI] = 0b111,
-	[AX64_RSI] = 0b110,
-	[AX64_RDX] = 0b010,
-	[AX64_RCX] = 0b001,
-	[AX64_R9 ] = 0b001,
-	[AX64_R8 ] = 0b000,
-	[AX64_RAX] = 0b000,
-	[AX64_RBX] = 0b011,
-	[AX64_RBP] = 0b101,
-	[AX64_RSP] = 0b100,
-	[AX64_R10] = 0b010,
-	[AX64_R11] = 0b011,
-	[AX64_R12] = 0b100,
-	[AX64_R13] = 0b101,
-	[AX64_R14] = 0b110,
-	[AX64_R15] = 0b111,
+	[AX64_RDI] = 0x7,
+	[AX64_RSI] = 0x6,
+	[AX64_RDX] = 0x2,
+	[AX64_RCX] = 0x1,
+	[AX64_R9 ] = 0x9,
+	[AX64_R8 ] = 0x8,
+	[AX64_RAX] = 0x0,
+	[AX64_RBX] = 0x3,
+	[AX64_RBP] = 0x5,
+	[AX64_RSP] = 0x4,
+	[AX64_R10] = 0xA,
+	[AX64_R11] = 0xB,
+	[AX64_R12] = 0xC,
+	[AX64_R13] = 0xD,
+	[AX64_R14] = 0xE,
+	[AX64_R15] = 0xF,
 };
 
 static const char *reg2str[] = {
@@ -236,9 +236,12 @@ void unmap_memory(void *m)
 	munmap(m, PAGE);
 }
 
+static FILE *out;
+
 generic_fp *ax64_bin_program(struct ir_program *pgrm)
 {
 	generic_fp *defs = NULL;
+	out = stderr;
 	for (ssize_t i = 0; i < buf_len(pgrm->defs); i++) {
 		buf_push(defs, ax64_bin_definition(pgrm->defs + i));
 	}
@@ -251,6 +254,7 @@ generic_fp ax64_bin_definition(struct ir_definition *def)
 {
 	byte_t *start = page_aligned_memory();
 	cursor = start;
+	fprintf(out, "\n");
 	for (ssize_t i = 0; i < buf_len(def->stmts); i++) {
 		ax64_bin_statement(def, def->stmts + i);
 	}
@@ -258,54 +262,90 @@ generic_fp ax64_bin_definition(struct ir_definition *def)
 	return (generic_fp) start;
 }
 
+static void emit(uint8_t byte)
+{
+	fprintf(out, "%02X ", byte);
+	*cursor++ = byte;
+}
+
+static void emit4(uint32_t dword)
+{
+	emit(dword >>  0);
+	emit(dword >>  8);
+	emit(dword >> 16);
+	emit(dword >> 24);
+}
+
+static void emit8(uint64_t qword)
+{
+	emit4(qword >>  0);
+	emit4(qword >> 32);
+}
+
 void ax64_instr_ret(void)
 {
-	*cursor++ = 0xC3;
+	emit(0xC3);
+	fprintf(out, "\n");
 }
 
 void ax64_instr_mov_imm(int reg, uint64_t imm)
 {
-	if (imm >> 32)
-		*cursor++ = 0x48;
-	*cursor++ = 0xB8 | reg;
-
-	*cursor++ = imm >>  0 & 0xFF;
-	*cursor++ = imm >>  8 & 0xFF;
-	*cursor++ = imm >> 16 & 0xFF;
-	*cursor++ = imm >> 32 & 0xFF;
-	if ((imm >>= 32) == 0) return;
-	*cursor++ = imm >>  0 & 0xFF;
-	*cursor++ = imm >>  8 & 0xFF;
-	*cursor++ = imm >> 16 & 0xFF;
-	*cursor++ = imm >> 32 & 0xFF;
+	emit(0x40 | (1 << 3) | (reg >> 3));
+	emit(0xB8 | (reg & 0b111));
+	emit8(imm);
+	fprintf(out, "\n");
 }
 
 void ax64_instr_mov_reg(int rd, int rs)
 {
+	emit(0x40 | (1 << 3) | (rs >> 3 << 2) | (rd >> 3));
+	emit(0x89);
+	emit(0xC0 | ((rs & 0b111) << 3) | (rd & 0b111));
+	fprintf(out, "\n");
+}
 
+void ax64_instr_add_reg(int rd, int rs)
+{
+	emit(0x40 | (1 << 3) | (rs >> 3 << 2) | (rd >> 3));
+	emit(0x01);
+	emit(0xC0 | ((rs & 0b111) << 3) | (rd & 0b111));
+	fprintf(out, "\n");
+}
+
+void ax64_instr_add_imm(int rd, uint32_t imm)
+{
+	emit(0x40 | (1 << 3) | (rd >> 3));
+	emit(0x81);
+	emit(0xC0 | 0b000 << 3 | (rd & 0b111));
+	emit4(imm);
+	fprintf(out, "\n");
+}
+
+static int id2reg(struct ir_definition *def, struct identifier id)
+{
+	ssize_t idx;
+	struct identifier *match = id_find(def->params, id);
+	if (match) {
+		idx = match - def->params + AX64_ARG0;
+	} else {
+		match = id_find(def->locals, id);
+		idx = match - def->locals + buf_len(def->params);
+	}
+	assert(match);
+	return reg2bin[idx];
 }
 
 void ax64_bin_statement(struct ir_definition *def, struct ir_statement *stmt)
 {
-	ssize_t idx;
-	struct identifier *match;
+	int reg1, reg2;
 	switch (stmt->instr) {
 	case IRINSTR_SET:
-		match = id_find(def->params, stmt->ops[0].oid);
-		if (match) idx = match - def->params + AX64_ARG0;
-		else match = id_find(def->locals, stmt->ops[0].oid);
-		assert(match);
-		idx = match - def->locals + buf_len(def->params);
+		reg1 = id2reg(def, stmt->ops[0].oid);
 		if (stmt->ops[1].kind == IR_HEX) {
-			ax64_instr_mov_imm(reg2bin[idx], stmt->ops[1].oint);
+			ax64_instr_mov_imm(reg1, stmt->ops[1].oint);
 		} else if (stmt->ops[1].kind == IR_VAR) {
-			ssize_t idx2;
-			match = id_find(def->params, stmt->ops[1].oid);
-			if (match) idx2 = match - def->params + AX64_ARG0;
-			else match = id_find(def->locals, stmt->ops[1].oid);
-			assert(match);
-			idx2 = match - def->locals + buf_len(def->params);
-			ax64_instr_mov_reg(reg2bin[idx], reg2bin[idx2]);
+			reg2 = id2reg(def, stmt->ops[1].oid);
+			ax64_instr_mov_reg(reg1, reg2);
 		} else {
 			assert(0);
 		}
@@ -313,12 +353,35 @@ void ax64_bin_statement(struct ir_definition *def, struct ir_statement *stmt)
 	case IRINSTR_RET:
 		if (stmt->ops[0].kind == IR_HEX) {
 			ax64_instr_mov_imm(reg2bin[AX64_RETVAL], stmt->ops[0].oint);
+		} else if (stmt->ops[0].kind == IR_VAR) {
+			ax64_instr_mov_reg(reg2bin[AX64_RETVAL], id2reg(def, stmt->ops[0].oid));
+		} else {
+			assert(0);
 		}
 		ax64_instr_ret();
 		break;
 	case IRINSTR_LOCAL:
 		break;
 	case IRINSTR_ADD:
+		assert(id_cmp(stmt->ops[0].oid, stmt->ops[1].oid) != 0 &&
+				id_cmp(stmt->ops[0].oid, stmt->ops[2].oid) != 0);
+		reg1 = id2reg(def, stmt->ops[0].oid);
+		reg2 = id2reg(def, stmt->ops[1].oid);
+		if (stmt->ops[1].kind == IR_HEX) {
+			ax64_instr_mov_imm(reg1, stmt->ops[1].oint);
+		} else if (stmt->ops[1].kind == IR_VAR) {
+			ax64_instr_mov_reg(reg1, reg2);
+		} else {
+			assert(0);
+		}
+		if (stmt->ops[2].kind == IR_HEX) {
+			ax64_instr_add_imm(reg1, stmt->ops[2].oint);
+		} else if (stmt->ops[2].kind == IR_VAR) {
+			reg2 = id2reg(def, stmt->ops[2].oid);
+			ax64_instr_add_reg(reg1, reg2);
+		} else {
+			assert(0);
+		}
 		break;
 	case IRINSTR_CMP:
 		break;

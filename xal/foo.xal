@@ -7,7 +7,7 @@
 
 (def bar (a, b) # this function adds a and b
 	(set c (+ a b))
-	(set a (+ c b))
+	(set a (+ c 0))
 	a
 )
 
