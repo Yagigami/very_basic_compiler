@@ -102,13 +102,17 @@ int main(int argc, char **argv)
 
 	generic_fp *funcs = ax64_bin_program(&ir_pgrm);
 
-	typedef uint64_t (*rulavproc) (void);
-	rulavproc foo = (rulavproc) funcs[0];
+	typedef uint64_t (*fooproc) (void);
+	fooproc foo = (fooproc) funcs[0];
 	assert(foo() == 1);
 
-	typedef uint64_t (*rula2ulproc) (uint64_t, uint64_t);
-	rula2ulproc bar = (rula2ulproc) funcs[1];
-	assert(bar(178, 67) == 178 + 2 * 67);
+	typedef uint64_t (*barproc) (uint64_t, uint64_t);
+	barproc bar = (barproc) funcs[1];
+	assert(bar(178, 67) == 178 + 67);
+
+	typedef uint64_t (*whproc) (void);
+	whproc wh = (whproc) funcs[2];
+	assert(wh() == 8);
 
 	ret = 0;
 ir:

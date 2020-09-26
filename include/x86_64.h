@@ -18,6 +18,7 @@ generic_fp *ax64_bin_program(struct ir_program *pgrm);
 generic_fp ax64_bin_definition(struct ir_definition *def);
 void ax64_bin_statement(struct ir_definition *def, struct ir_statement *stmt);
 void ax64_bin_operand(struct ir_definition *def, struct ir_operand *op);
+void ax64_bin_patch(struct ir_definition *def);
 
 #endif /* ARCH_X86_64_H */
 

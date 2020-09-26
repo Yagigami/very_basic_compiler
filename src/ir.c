@@ -324,7 +324,7 @@ void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstm
 {
 	struct ir_operand *ops = NULL;
 	struct ir_operand op;
-	enum ir_type skip_cond;
+	enum ir_type skip_cond, cond;
 	ssize_t mthen, melse, mend;
 	switch (xstmt->kind) {
 	case XALLANG_SET:
@@ -371,13 +371,13 @@ void ir_trs_statement(struct ir_definition *idef, struct xallang_statement *xstm
 				.olbl = mend + 1,
 			});
 		idef->stmts[mthen].ops = ops;
-		ir_trs_boolexpr(idef, &skip_cond, xstmt->xwhile.cond);
+		ir_trs_boolexpr(idef, &cond, xstmt->xwhile.cond);
 		ops = NULL;
 		buf_push(ops, (struct ir_operand){
 				.kind = IR_LABEL,
 				.olbl = mthen + 1,
 			});
-		buf_push(idef->stmts, (struct ir_statement){ .instr = skip_cond, .ops = ops});
+		buf_push(idef->stmts, (struct ir_statement){ .instr = cond, .ops = ops});
 		break;
 	default:
 		assert(0);
@@ -425,7 +425,7 @@ void ir_trs_intexpr(struct ir_definition *idef, struct ir_operand *iop, struct x
 	}
 }
 
-void ir_trs_boolexpr(struct ir_definition *idef, enum ir_type *skip_cond, struct xallang_boolexpression *xbexpr)
+void ir_trs_boolexpr(struct ir_definition *idef, enum ir_type *cond, struct xallang_boolexpression *xbexpr)
 {
 	struct ir_operand *ops = NULL;
 	struct ir_operand op;
@@ -438,7 +438,7 @@ void ir_trs_boolexpr(struct ir_definition *idef, enum ir_type *skip_cond, struct
 		buf_push(idef->stmts, (struct ir_statement){
 				.instr = IRINSTR_CMP, .ops = ops
 			});
-		*skip_cond = IRINSTR_JNZ;
+		*cond = IRINSTR_JNZ;
 		break;
 	case XALLANG_NOT:
 	case XALLANG_LT:
@@ -449,7 +449,7 @@ void ir_trs_boolexpr(struct ir_definition *idef, enum ir_type *skip_cond, struct
 		buf_push(idef->stmts, (struct ir_statement){
 				.instr = IRINSTR_CMP, .ops = ops
 			});
-		*skip_cond = IRINSTR_JGE;
+		*cond = IRINSTR_JL;
 		break;
 	default:
 		assert(0);

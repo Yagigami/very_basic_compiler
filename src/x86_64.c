@@ -82,6 +82,25 @@ static const char *reg2str[] = {
 	[AX64_R16] = "%r16",
 };
 
+enum ax64_cc {
+	AX64_O = 0,
+	AX64_NO,
+	AX64_B, AX64_NAE = AX64_B,
+	AX64_NB, AX64_AE = AX64_NB,
+	AX64_E, AX64_Z = AX64_E,
+	AX64_NE, AX64_NZ = AX64_NE,
+	AX64_BE, AX64_NA = AX64_BE,
+	AX64_NBE, AX64_A = AX64_NBE,
+	AX64_S,
+	AX64_NS,
+	AX64_P, AX64_PE = AX64_P,
+	AX64_NP, AX64_PO = AX64_NP,
+	AX64_L, AX64_NGE = AX64_L,
+	AX64_NL, AX64_GE = AX64_NL,
+	AX64_LE, AX64_NG = AX64_LE,
+	AX64_NLE, AX64_G = AX64_NLE,
+};
+
 static const struct identifier ax64_retreg = { .len = 4, .name = "%rax", };
 
 void ax64_gen_program(FILE *f, struct ir_program *pgrm)
@@ -249,22 +268,39 @@ generic_fp *ax64_bin_program(struct ir_program *pgrm)
 }
 
 static byte_t *cursor;
+static struct reference_t {
+	byte_t *pos;
+	ssize_t idx;
+} *references;
+static byte_t **instructions;
 
 generic_fp ax64_bin_definition(struct ir_definition *def)
 {
 	byte_t *start = page_aligned_memory();
 	cursor = start;
-	fprintf(out, "\n");
+	references = NULL;
+	instructions = NULL;
 	for (ssize_t i = 0; i < buf_len(def->stmts); i++) {
 		ax64_bin_statement(def, def->stmts + i);
 	}
+	ax64_bin_patch(def);
+
+	for (ssize_t i = 0; i < buf_len(instructions)-1; i++) {
+		for (byte_t *instr = instructions[i]; instr < cursor && instr < instructions[i + 1]; instr++) {
+			fprintf(out, "%02X ", *instr);
+		}
+		fprintf(out, "\n");
+	}
+	fprintf(out, "%02X", cursor[-1]);
+	fprintf(out, "\n");
+	fprintf(out, "\n");
+
 	mprotect(start, PAGE, PROT_READ | PROT_EXEC);
 	return (generic_fp) start;
 }
 
 static void emit(uint8_t byte)
 {
-	fprintf(out, "%02X ", byte);
 	*cursor++ = byte;
 }
 
@@ -284,41 +320,74 @@ static void emit8(uint64_t qword)
 
 void ax64_instr_ret(void)
 {
+	buf_push(instructions, cursor);
 	emit(0xC3);
-	fprintf(out, "\n");
 }
 
 void ax64_instr_mov_imm(int reg, uint64_t imm)
 {
+	buf_push(instructions, cursor);
 	emit(0x40 | (1 << 3) | (reg >> 3));
 	emit(0xB8 | (reg & 0b111));
 	emit8(imm);
-	fprintf(out, "\n");
 }
 
 void ax64_instr_mov_reg(int rd, int rs)
 {
+	buf_push(instructions, cursor);
 	emit(0x40 | (1 << 3) | (rs >> 3 << 2) | (rd >> 3));
 	emit(0x89);
 	emit(0xC0 | ((rs & 0b111) << 3) | (rd & 0b111));
-	fprintf(out, "\n");
 }
 
 void ax64_instr_add_reg(int rd, int rs)
 {
+	buf_push(instructions, cursor);
 	emit(0x40 | (1 << 3) | (rs >> 3 << 2) | (rd >> 3));
 	emit(0x01);
 	emit(0xC0 | ((rs & 0b111) << 3) | (rd & 0b111));
-	fprintf(out, "\n");
 }
 
 void ax64_instr_add_imm(int rd, uint32_t imm)
 {
+	buf_push(instructions, cursor);
 	emit(0x40 | (1 << 3) | (rd >> 3));
 	emit(0x81);
 	emit(0xC0 | 0b000 << 3 | (rd & 0b111));
 	emit4(imm);
-	fprintf(out, "\n");
+}
+
+void ax64_instr_jmp_imm(ssize_t ir_idx)
+{
+	buf_push(instructions, cursor);
+	emit(0xEB);
+	buf_push(references, (struct reference_t){ cursor, ir_idx });
+	emit(0x00);
+}
+
+void ax64_instr_cmp_imm(int reg, uint32_t imm)
+{
+	buf_push(instructions, cursor);
+	emit(0x40 | 0x08 | (reg >> 3));
+	emit(0x81);
+	emit(0xC0 | 0b111 << 3 | (reg & 0b111));
+	emit4(imm);
+}
+
+void ax64_instr_cmp_reg(int rd, int rs)
+{
+	buf_push(instructions, cursor);
+	emit(0x40 | 0x08 | (rs >> 3 << 2) | (rd >> 3));
+	emit(0x3B);
+	emit(0xC0 | ((rs & 0b111) << 3) | (rd & 0b111));
+}
+
+void ax64_instr_jcc_imm(enum ax64_cc cc, ssize_t ir_idx)
+{
+	buf_push(instructions, cursor);
+	emit(0x70 | cc);
+	buf_push(references, (struct reference_t){ cursor, ir_idx });
+	emit(0x00);
 }
 
 static int id2reg(struct ir_definition *def, struct identifier id)
@@ -366,10 +435,10 @@ void ax64_bin_statement(struct ir_definition *def, struct ir_statement *stmt)
 		assert(id_cmp(stmt->ops[0].oid, stmt->ops[1].oid) != 0 &&
 				id_cmp(stmt->ops[0].oid, stmt->ops[2].oid) != 0);
 		reg1 = id2reg(def, stmt->ops[0].oid);
-		reg2 = id2reg(def, stmt->ops[1].oid);
 		if (stmt->ops[1].kind == IR_HEX) {
 			ax64_instr_mov_imm(reg1, stmt->ops[1].oint);
 		} else if (stmt->ops[1].kind == IR_VAR) {
+			reg2 = id2reg(def, stmt->ops[1].oid);
 			ax64_instr_mov_reg(reg1, reg2);
 		} else {
 			assert(0);
@@ -384,16 +453,35 @@ void ax64_bin_statement(struct ir_definition *def, struct ir_statement *stmt)
 		}
 		break;
 	case IRINSTR_CMP:
+		reg1 = id2reg(def, stmt->ops[0].oid);
+		if (stmt->ops[1].kind == IR_HEX) {
+			ax64_instr_cmp_imm(reg1, stmt->ops[1].oint);
+		} else if (stmt->ops[1].kind == IR_VAR) {
+			reg2 = id2reg(def, stmt->ops[1].oid);
+			ax64_instr_cmp_reg(reg1, reg2);
+		} else {
+			assert(0);
+		}
 		break;
 	case IRINSTR_JMP:
+		assert(stmt->ops[0].kind == IR_LABEL);
+		ax64_instr_jmp_imm(stmt->ops[0].olbl);
 		break;
 	case IRINSTR_JZ:
+		assert(stmt->ops[0].kind == IR_LABEL);
+		ax64_instr_jcc_imm(AX64_Z, stmt->ops[0].olbl);
 		break;
 	case IRINSTR_JNZ:
+		assert(stmt->ops[0].kind == IR_LABEL);
+		ax64_instr_jcc_imm(AX64_NZ, stmt->ops[0].olbl);
 		break;
 	case IRINSTR_JL:
+		assert(stmt->ops[0].kind == IR_LABEL);
+		ax64_instr_jcc_imm(AX64_L, stmt->ops[0].olbl);
 		break;
 	case IRINSTR_JGE:
+		assert(stmt->ops[0].kind == IR_LABEL);
+		ax64_instr_jcc_imm(AX64_GE, stmt->ops[0].olbl);
 		break;
 	default:
 		assert(0);
@@ -405,4 +493,12 @@ void ax64_bin_operand(struct ir_definition *def, struct ir_operand *op)
 	(void) cursor;
 	(void) op;
 }
+
+void ax64_bin_patch(struct ir_definition *def)
+{
+	for (ssize_t i = 0; i < buf_len(references); i++) {
+		*references[i].pos = instructions[ references[i].idx ] - references[i].pos - 1;
+	}
+}
+
 
