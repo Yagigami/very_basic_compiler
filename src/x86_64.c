@@ -256,18 +256,19 @@ void unmap_memory(void *m)
 }
 
 static FILE *out;
+static byte_t *cursor;
 
-generic_fp *ax64_bin_program(struct ir_program *pgrm)
+generic_fp *ax64_bin_program(struct ir_program *pgrm, ssize_t **lengths)
 {
 	generic_fp *defs = NULL;
 	out = stderr;
 	for (ssize_t i = 0; i < buf_len(pgrm->defs); i++) {
 		buf_push(defs, ax64_bin_definition(pgrm->defs + i));
+		buf_push(*lengths, cursor - (byte_t *) defs[i]);
 	}
 	return defs;
 }
 
-static byte_t *cursor;
 static struct reference_t {
 	byte_t *pos;
 	ssize_t idx;
@@ -398,9 +399,9 @@ static int id2reg(struct ir_definition *def, struct identifier id)
 		idx = match - def->params + AX64_ARG0;
 	} else {
 		match = id_find(def->locals, id);
+		assert(match);
 		idx = match - def->locals + buf_len(def->params);
 	}
-	assert(match);
 	return reg2bin[idx];
 }
 

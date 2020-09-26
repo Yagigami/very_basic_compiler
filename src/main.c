@@ -96,11 +96,12 @@ int main(int argc, char **argv)
 
 	ir_trs_program(&ir_pgrm, &pgrm);
 
-	// ir_dump_program(stdout, 0, &ir_pgrm);
+	ir_dump_program(stdout, 0, &ir_pgrm);
 
 	ax64_gen_program(stdout, &ir_pgrm);
 
-	generic_fp *funcs = ax64_bin_program(&ir_pgrm);
+	ssize_t *lengths = NULL;
+	generic_fp *funcs = ax64_bin_program(&ir_pgrm, &lengths);
 
 	typedef uint64_t (*fooproc) (void);
 	fooproc foo = (fooproc) funcs[0];
